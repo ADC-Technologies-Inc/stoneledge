@@ -61,6 +61,7 @@
 // fixed error regarding frequency of temperature calculations
 //
 //
+// NTD - moved InitLeds() call to perform sweep without interruption by watchdog
 
 #include "adct.h"
 
@@ -73,11 +74,11 @@ void InitializeProgram(void)
 
 	DisableRhuRelay(); 						// Turn off relay load block
 	ExtGpioInit(); 							// Initialized eGPIOs
+    InitLeds();                             // initilze LEDS (off) // startup sweep?
+
 	InitializeRHUs(); 						// Initialize RHUS
 	InitSysId(); 							// read system ID
 	InitRhuWatchdog(); 						// Init Rhu Watchdog
-
-	InitLeds(); 							// initilze LEDS (off) // startup sweep?
 
 	InitNtc(); 								// initialize analog/ptc section
 	InitCurrent(); 							// initialize analog/current sense section

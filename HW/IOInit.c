@@ -14,8 +14,14 @@
  *
  */
 
+//#define DEBUG_IOINIT
+
 #include "../HW/IOInit.h"
+
+#ifdef DEBUG_IOINIT
 #include "../prog/ntd_debug.h"
+#endif
+
 
 // defines
 #define CMD_INPUT 0x00
@@ -26,16 +32,7 @@
 
 #define NUM_EXT_GPIO_SETS 		0x08
 // I2C address of each of the 8 IO expander chips (PCA9557)
-/*
-#define GPIO100_ADDR 			0x18 		//0b0011000
-#define GPIO200_ADDR 			0x19 		//0b0011001
-#define GPIO300_ADDR 			0x1A 		//0b0011010
-#define GPIO400_ADDR 			0x1B 		//0b0011011
-#define GPIO500_ADDR 			0x1C 		//0b0011100
-#define GPIO600_ADDR 			0x1D 		//0b0011101
-#define GPIO700_ADDR 			0x1E 		//0b0011110
-#define GPIO800_ADDR 			0x1F 		//0b0011111
-*/
+
 #define GPIO100_ADDR 			0x18 		//0b0011000
 #define GPIO200_ADDR 			0x1C 		//0b0011100
 #define GPIO300_ADDR 			0x1A 		//0b0011010
@@ -443,10 +440,12 @@ void ExtGpioSet(uint16_t pin_, uint16_t set_)
 	ExtGpioReadSet(accm, ext_gpio_rx_buffer);
 	read2 = ext_gpio_rx_buffer[0];
 
+#ifdef DEBUG_IOINIT
+    printf("ExtGpioSet:: Pin: %d; Set %d; accm: "PRINTF_BINSTR8"; buffer: "PRINTF_BINSTR8" read1: "PRINTF_BINSTR8"; read2: "PRINTF_BINSTR8"; written: "PRINTF_BINSTR8"\n", pin_, set_, PRINTF_BINSTR8_ARGS(accm), PRINTF_BINSTR8_ARGS(ext_gpio_rx_buffer[0]),PRINTF_BINSTR8_ARGS(read1), PRINTF_BINSTR8_ARGS(read2), PRINTF_BINSTR8_ARGS(written) );
 	if (written != read2){
 	    printf( "ExtGpioSet:: ALARM\n");
-	    printf("ExtGpioSet:: Pin: %d; Set %d; accm: "PRINTF_BINSTR8"; buffer: "PRINTF_BINSTR8" read1: "PRINTF_BINSTR8"; read2: "PRINTF_BINSTR8"; written: "PRINTF_BINSTR8"\n", pin_, set_, PRINTF_BINSTR8_ARGS(accm), PRINTF_BINSTR8_ARGS(ext_gpio_rx_buffer[0]),PRINTF_BINSTR8_ARGS(read1), PRINTF_BINSTR8_ARGS(read2), PRINTF_BINSTR8_ARGS(written) );
 	}
+#endif
 
 }
 
@@ -464,7 +463,9 @@ void GpioSetDirArray(uint16_t pin_array_, uint16_t array_)
 	if(ext_gpio_buffer[1] != ext_gpio_rx_buffer[0]) 		// check for same data
 	{
 		// call error function for bad i2c write to PCA9557 chip
+#ifdef DEBUG_IOINIT
 	    printf("GpioSetDirArray:: Bad Write\n");
+#endif
 	}
 }
 

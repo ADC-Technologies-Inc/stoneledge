@@ -17,31 +17,12 @@ void Pause()
 
 int main(void)
 {
-    Uint16 tick = 0;
-    Uint16 toggle = 0;
-    Uint16 i = 0;
-
 	memCopy((unsigned int *) &RamfuncsLoadStart,
 			(unsigned int *) &RamfuncsLoadEnd,
 			(unsigned int *) &RamfuncsRunStart);
 
 	InitializeHardware(); 					// initializes clocks, gpio, and peripherials to safe states
 	InitializeProgram(); 					// initializes program variables and other program-specific functions
-
-	while(tick < 10000){
-        if (tick++ % 200 == 0){
-            toggle = ~toggle;
-
-            for (i=0; i < 15; i++){
-                if (!toggle) ClearLed(i);
-                else SetLed(i);
-
-            }
-        }
-
-        tick ++;
-        Pause();
-	}
 
 	while (1)
 	{

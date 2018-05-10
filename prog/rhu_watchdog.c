@@ -88,11 +88,11 @@ void ServiceRhuWatchdog(void)
 	rhuWatchdogs[8] = rhuWatchdogs[0] + rhuWatchdogs[1] + rhuWatchdogs[2] + rhuWatchdogs[3] + rhuWatchdogs[4] + rhuWatchdogs[5] + rhuWatchdogs[6] + rhuWatchdogs[7];
 	if(rhuWatchdogs[8] > 0)
 	{
-		LedWdSet(8);
+		LedWdSet(LED_ONGOING);
 	}
 	else
 	{
-		LedWdClear(8); 				// remove ongoing led
+		LedWdClear(LED_ONGOING); 				// remove ongoing led
 		LcdPostModal(9); 			// post recovered LCD message
 	}
 }
