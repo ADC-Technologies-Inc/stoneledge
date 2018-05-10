@@ -47,10 +47,12 @@
 
 // defines pins as inputs/outputs
 #define GPIO_100_INIT_DIR 		0x05 		//0b00000101 // output for status LEDs // 100 and 102 not used
-#define GPIO_200_INIT_DIR 		0xC0 		//0b11000000 // output for status LEDs // 206 and 207 not used
+//#define GPIO_200_INIT_DIR 		0xC0 		//0b11000000 // output for status LEDs // 206 and 207 not used;;
+#define GPIO_200_INIT_DIR       0x41        //0b01000001 // output for status LEDs // 206 and 200 not used- changed to fix issue, 207 replaced 200
 #define GPIO_300_INIT_DIR 		0xFF 		//0b11111111 // input for duty cycle switches
 #define GPIO_400_INIT_DIR 	 	0xFF 		//0b11111111 // input for duty cycle switches
-#define GPIO_500_INIT_DIR 	 	0xF0 		//0b11110000 // 500-503 ADC MUX switches (output) 504-507 opto-coupler (input)
+//#define GPIO_500_INIT_DIR 	 	0xF0 		//0b11110000 // 500-503 ADC MUX switches (output) 504-507 opto-coupler (input)
+#define GPIO_500_INIT_DIR       0x71        //0b01110001 // 500-503 ADC MUX switches (output) 504-507 opto-coupler (input); 507 and 500 switched
 #define GPIO_600_INIT_DIR 		0xFF 		//0b00001111 // 600-603 opto-coupler (input) 604-607 not used
 #define GPIO_700_INIT_DIR 		0xFF 		//0b00110000 // 700-703 706-707 not used // 704 705 inputs for 10-bit ID
 #define GPIO_800_INIT_DIR 		0xFF 		//0b11111111 // 800-807 inputs for 10-bit ID
@@ -420,10 +422,6 @@ void ExtGpioSet(uint16_t pin_, uint16_t set_)
 		accm = 2;
 	accm = 0;
 	pin_number = 0;
-
-	if (pin_ == 200){
-	    pin_ =200;
-	}
 
 	accm = pin_/100;
 	pin_number = pin_ % 100;

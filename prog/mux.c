@@ -23,10 +23,10 @@ void SetMux(uint16_t channel_)
 {
 	currentMux = channel_;
 
-	if(currentMux & BIT0)
-		 ExtGpioSet(500, 1);
+	if(currentMux & BIT7)
+		 ExtGpioSet(507, 1);
 	else
-		 ExtGpioSet(500, 0);
+		 ExtGpioSet(507, 0);
 
 	if(currentMux & BIT1)
 		ExtGpioSet(501, 1);

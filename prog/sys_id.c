@@ -5,6 +5,8 @@
  *      Author: Zack Lyzen
  */
 
+//#define DEBUG_SYS_ID
+
 #include <stdint.h>
 #include "../prog/ntd_debug.h"
 
@@ -55,7 +57,9 @@ void InitSysId(void)
 		sysId += 0x0200;
 	}
 
+#ifdef DEBUG_SYS_ID
 	printf("InitSysId: "PRINTF_BINSTR8"\n", PRINTF_BINSTR8_ARGS(sysId) );
+#endif
 }
 
 Uint16 GetSysId(void)

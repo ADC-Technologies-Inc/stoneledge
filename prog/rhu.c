@@ -20,7 +20,7 @@ static Uint16 duties[4] = {0, 50, 75, 100};
 static Uint16 duties[4] = {0, 500, 75, 1000};
 #endif
 static Uint16 tcos[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-static Uint16 tco_gpio[8] = {504, 505, 506, 507, 600, 601, 602, 603};
+static Uint16 tco_gpio[8] = {504, 505, 506, 500, 600, 601, 602, 603};
 static Uint16 rhus[8] = {CPU1, CPU2, MISC, RAM, DIMM_GRP, M_2_GRP, SFF_GRP, MEZZ};
 static Uint16 duty_cycle_settings[8] = {0,0,0,0,0,0,0,0}; 		// array of duty cycle settings for each RHU
 static Uint16 rhu_en_array  = 0; 								// bit array, 0 is disabled RHU and 1 is enabled RHU
