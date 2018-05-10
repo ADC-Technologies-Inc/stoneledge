@@ -7,6 +7,7 @@
 
 
 #include "ntc.h"
+#include "ntd_debug.h"
 
 uint16_t *tempArraya0; 			// pointer to the temperatures just read by the ADC (Analog Channels Struct)
 uint16_t *tempArraya1; 			// pointer to the temperatures a1
@@ -42,23 +43,27 @@ uint16_t GetNtcReady(void)
 	return ntcReady;
 }
 
+/*0 based call (0...15 valid)*/
 void ProcessNtcSet(uint16_t set_)
 {
 	uint16_t i = 0;
+	uint32_t avg;
 
 	while(i < 11)
 	{
-		avgTempArray[((set_-1)*11)+i] = (tempArrays[i])[0];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[1];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[2];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[3];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[4];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[5];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[6];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[7];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[8];
-		avgTempArray[((set_-1)*11)+i] += (tempArrays[i])[9];
-		avgTempArray[((set_-1)*11)+i] /= 10;
+		avg = (tempArrays[i])[0];
+		avg += (tempArrays[i])[1];
+		avg += (tempArrays[i])[2];
+		avg += (tempArrays[i])[3];
+		avg += (tempArrays[i])[4];
+		avg += (tempArrays[i])[5];
+		avg += (tempArrays[i])[6];
+		avg += (tempArrays[i])[7];
+		avg += (tempArrays[i])[8];
+		avg += (tempArrays[i])[9];
+		avg /= 10;
+
+		avgTempArray[((set_)*11)+i] = avg/10;
 		i++;
 	}
 	tempCycle = set_;
