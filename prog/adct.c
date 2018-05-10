@@ -75,8 +75,6 @@ void InitializeProgram(void)
 	DisableRhuRelay(); 						// Turn off relay load block
 	ExtGpioInit(); 							// Initialized eGPIOs
     InitLeds();                             // initilze LEDS (off) // startup sweep?
-
-    InitDutySW();                           // read duty-cycle switches
     InitSysId();                            // read system ID
 
 	InitializeRHUs(); 						// Initialize RHUS

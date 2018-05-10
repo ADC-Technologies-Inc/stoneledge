@@ -44,8 +44,7 @@ uint16_t GetNtcReady(void)
 
 void ProcessNtcSet(uint16_t set_)
 {
-	static uint16_t i;
-	i = 0;
+	uint16_t i = 0;
 
 	while(i < 11)
 	{

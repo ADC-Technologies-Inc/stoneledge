@@ -5,23 +5,15 @@
  *      Author: Zack Lyzen
  */
 
+#define DEBUG_TEMPS
+
+#ifdef DEBUG_TEMPS
+#include "ntd_debug.h"
+#endif
+
 #include "temps.h"
 
 #define NUM_TEMPS 		10
-
-#define C_TO_K 			(double)273
-#define C_25_IN_K 		(double)298
-#define RES_DIV 	 	(double)10000 		// resistor used for ntc divider (10k ohm) (also value of NTC @ 25C)
-
-// temp variables
-
-static double r_inf 	= 0; 		// r-inf calculation
-static double exp_holder= 0;
-static double B 		= 3900; 	// B value of NTC
-static double R 		= 0; 		// measured resistance of NTC
-static double tempDen 	= 0; 		// denominator of temp calc
-static double tempNum 	= 0; 		// numerator of temp calc
-static double T 		= 0; 		// result of temp calc in Kelvin
 
 struct TempCell{
 	uint16_t 	max_temp;
@@ -52,6 +44,29 @@ uint16_t maxTempValue = 0;
 uint16_t oldMaxTempValue = 0;
 uint16_t maxTempValid = 0;
 
+#define C_TO_K          (double)273
+#define C_25_IN_K       (double)298
+#define RES_DIV         (double)10000            // resistor used for ntc divider (10k ohm) (also value of NTC @ 25C)
+
+//Beta and r_inf values from datasheets for each Thermistor type
+#define BETA_JT         (double) 3435            //Semitec 103JT-xxx
+#define RINF_JT         (double) 0.0991911898
+
+#define BETA_SC30       (double) 3981            //Amphenol SC30F103V
+#define RINF_SC30       (double) 0.0158910527
+
+#define BETA_NCP        (double) 3380            //muRata NCP18XH103F03RB
+#define RINF_NCP        (double) 0.1192855385
+
+
+//Macro to simplify calling the converter
+#define CONVERTTEMP_JT( counts_ ) ConvertTemp_Generic(counts_, BETA_JT, RINF_JT )
+#define CONVERTTEMP_SC30( counts_ ) ConvertTemp_Generic(counts_, BETA_SC30, RINF_SC30 )
+#define CONVERTTEMP_NCP( counts_ ) ConvertTemp_Generic(counts_, BETA_NCP, RINF_NCP )
+
+uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_);
+
+
 uint16_t GetMaxTempData(void)
 {
 	if(maxTempValid)
@@ -60,6 +75,7 @@ uint16_t GetMaxTempData(void)
 		return oldMaxTempValue;
 }
 
+/*rhu_ is 0-based*/
 uint16_t GetTempDataSingle(uint16_t rhu_)
 {
 	return Temps[rhu_]->max_temp;
@@ -75,334 +91,234 @@ void SetMaxTemp(void)
 	while(i <  NUM_TEMPS)
 	{
 		if(Temps[i]->max_temp > maxTempValue)
-			maxTempValue = Temps[0]->max_temp;
+			maxTempValue = Temps[i]->max_temp;
 		i++;
 	}
 	maxTempValid = 1;
 }
 
+#ifdef DEBUG_TEMPS
+#define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];\
+    printf("IDX: %d COUNTS: %d, TEMP: %d\n",idx_, (uint16_t) AverageTempArray[idx_], CONVERTTEMP_NCP(AverageTempArray[idx_]));
+#else
+#define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];
+#endif
+
 void ProcessTempData(void)
 {
+    /*NTD - VERIFIED 05/10/18. ALL IDX ACCURATE*/
+
+    uint16_t sc30_temp;
+
 	if(GetNtcReady() == 1)
 	{
 		ClearNtcReady();
 		AverageTempArray = GetTempData();
 		// CPU 1
 		Temps[0]->max_temp_counts = AverageTempArray[44];
-		if(Temps[0]->max_temp_counts < AverageTempArray[55])
-			Temps[0]->max_temp_counts = AverageTempArray[55];
-		if(Temps[0]->max_temp_counts < AverageTempArray[66])
-			Temps[0]->max_temp_counts = AverageTempArray[66];
-		if(Temps[0]->max_temp_counts < AverageTempArray[77])
-			Temps[0]->max_temp_counts = AverageTempArray[77];
-		if(Temps[0]->max_temp_counts < AverageTempArray[88])
-			Temps[0]->max_temp_counts = AverageTempArray[88];
+
+		TESTANDSET_MAXTEMP( 0, 66 );
+		TESTANDSET_MAXTEMP( 0, 77 );
+		TESTANDSET_MAXTEMP( 0, 88 );
+        Temps[0]->max_temp = CONVERTTEMP_NCP(Temps[0]->max_temp_counts);
+
+		sc30_temp = CONVERTTEMP_SC30(AverageTempArray[55]);
+		if (sc30_temp > Temps[0]->max_temp) Temps[0]->max_temp = sc30_temp;
+
+#ifdef DEBUG_TEMPS
+		printf("IDX: 55 TEMP: %d   SC30\n", sc30_temp);
+#endif
+
 		// CPU 2
 		Temps[1]->max_temp_counts = AverageTempArray[99];
-		if(Temps[1]->max_temp_counts < AverageTempArray[110])
-			Temps[1]->max_temp_counts = AverageTempArray[110];
-		if(Temps[1]->max_temp_counts < AverageTempArray[121])
-			Temps[1]->max_temp_counts = AverageTempArray[121];
-		if(Temps[1]->max_temp_counts < AverageTempArray[132])
-			Temps[1]->max_temp_counts = AverageTempArray[132];
-		if(Temps[1]->max_temp_counts < AverageTempArray[143])
-			Temps[1]->max_temp_counts = AverageTempArray[143];
+		TESTANDSET_MAXTEMP( 1, 121 );
+		TESTANDSET_MAXTEMP( 1, 132 );
+		TESTANDSET_MAXTEMP( 1, 143 );
+        Temps[1]->max_temp = CONVERTTEMP_NCP(Temps[1]->max_temp_counts);
+
+        sc30_temp = CONVERTTEMP_SC30(AverageTempArray[110]);
+        if (sc30_temp > Temps[1]->max_temp) Temps[1]->max_temp = sc30_temp;
+#ifdef DEBUG_TEMPS
+        printf("IDX: 110 TEMP: %d   SC30\n", sc30_temp);
+#endif
+
+
 		// MISC
 		Temps[2]->max_temp_counts = AverageTempArray[89];
-		if(Temps[2]->max_temp_counts < AverageTempArray[100])
-			Temps[2]->max_temp_counts = AverageTempArray[100];
-		if(Temps[2]->max_temp_counts < AverageTempArray[165])
-			Temps[2]->max_temp_counts = AverageTempArray[165];
+		TESTANDSET_MAXTEMP( 2, 100 );
+		TESTANDSET_MAXTEMP( 2, 165 );
+		Temps[2]->max_temp = CONVERTTEMP_NCP(Temps[2]->max_temp_counts);
+
+
 		// RAM
 		Temps[3]->max_temp_counts = AverageTempArray[1];
-		if(Temps[3]->max_temp_counts < AverageTempArray[2])
-			Temps[3]->max_temp_counts = AverageTempArray[2];
-		if(Temps[3]->max_temp_counts < AverageTempArray[12])
-			Temps[3]->max_temp_counts = AverageTempArray[12];
-		if(Temps[3]->max_temp_counts < AverageTempArray[13])
-			Temps[3]->max_temp_counts = AverageTempArray[13];
-		if(Temps[3]->max_temp_counts < AverageTempArray[23])
-			Temps[3]->max_temp_counts = AverageTempArray[23];
-		if(Temps[3]->max_temp_counts < AverageTempArray[24])
-			Temps[3]->max_temp_counts = AverageTempArray[24];
-		if(Temps[3]->max_temp_counts < AverageTempArray[34])
-			Temps[3]->max_temp_counts = AverageTempArray[34];
-		if(Temps[3]->max_temp_counts < AverageTempArray[35])
-			Temps[3]->max_temp_counts = AverageTempArray[35];
-		if(Temps[3]->max_temp_counts < AverageTempArray[45])
-			Temps[3]->max_temp_counts = AverageTempArray[45];
-		if(Temps[3]->max_temp_counts < AverageTempArray[46])
-			Temps[3]->max_temp_counts = AverageTempArray[46];
-		if(Temps[3]->max_temp_counts < AverageTempArray[56])
-			Temps[3]->max_temp_counts = AverageTempArray[56];
-		if(Temps[3]->max_temp_counts < AverageTempArray[57])
-			Temps[3]->max_temp_counts = AverageTempArray[57];
-		if(Temps[3]->max_temp_counts < AverageTempArray[67])
-			Temps[3]->max_temp_counts = AverageTempArray[67];
-		if(Temps[3]->max_temp_counts < AverageTempArray[68])
-			Temps[3]->max_temp_counts = AverageTempArray[68];
-		if(Temps[3]->max_temp_counts < AverageTempArray[78])
-			Temps[3]->max_temp_counts = AverageTempArray[78];
-		if(Temps[3]->max_temp_counts < AverageTempArray[79])
-			Temps[3]->max_temp_counts = AverageTempArray[79];
-		if(Temps[3]->max_temp_counts < AverageTempArray[90])
-			Temps[3]->max_temp_counts = AverageTempArray[90];
-		if(Temps[3]->max_temp_counts < AverageTempArray[101])
-			Temps[3]->max_temp_counts = AverageTempArray[101];
-		if(Temps[3]->max_temp_counts < AverageTempArray[111])
-			Temps[3]->max_temp_counts = AverageTempArray[111];
-		if(Temps[3]->max_temp_counts < AverageTempArray[122])
-			Temps[3]->max_temp_counts = AverageTempArray[122];
-		if(Temps[3]->max_temp_counts < AverageTempArray[133])
-			Temps[3]->max_temp_counts = AverageTempArray[133];
-		if(Temps[3]->max_temp_counts < AverageTempArray[144])
-			Temps[3]->max_temp_counts = AverageTempArray[144];
-		if(Temps[3]->max_temp_counts < AverageTempArray[155])
-			Temps[3]->max_temp_counts = AverageTempArray[155];
-		if(Temps[3]->max_temp_counts < AverageTempArray[166])
-			Temps[3]->max_temp_counts = AverageTempArray[166];
+		TESTANDSET_MAXTEMP( 3, 2 );
+		TESTANDSET_MAXTEMP( 3, 12 );
+		TESTANDSET_MAXTEMP( 3, 13 );
+		TESTANDSET_MAXTEMP( 3, 23 );
+		TESTANDSET_MAXTEMP( 3, 24 );
+		TESTANDSET_MAXTEMP( 3, 34 );
+		TESTANDSET_MAXTEMP( 3, 35 );
+		TESTANDSET_MAXTEMP( 3, 45 );
+		TESTANDSET_MAXTEMP( 3, 46 );
+		TESTANDSET_MAXTEMP( 3, 56 );
+		TESTANDSET_MAXTEMP( 3, 57 );
+		TESTANDSET_MAXTEMP( 3, 67 );
+		TESTANDSET_MAXTEMP( 3, 68 );
+		TESTANDSET_MAXTEMP( 3, 78 );
+		TESTANDSET_MAXTEMP( 3, 79 );
+		TESTANDSET_MAXTEMP( 3, 90 );
+		TESTANDSET_MAXTEMP( 3, 101 );
+		TESTANDSET_MAXTEMP( 3, 111 );
+		TESTANDSET_MAXTEMP( 3, 122 );
+		TESTANDSET_MAXTEMP( 3, 133 );
+		TESTANDSET_MAXTEMP( 3, 144 );
+		TESTANDSET_MAXTEMP( 3, 155 );
+		TESTANDSET_MAXTEMP( 3, 166 );
+		Temps[3]->max_temp = CONVERTTEMP_NCP(Temps[3]->max_temp_counts);
+;
 		// DIMM
 		Temps[4]->max_temp_counts = AverageTempArray[3];
-		if(Temps[4]->max_temp_counts < AverageTempArray[4])
-			Temps[4]->max_temp_counts = AverageTempArray[4];
-		if(Temps[4]->max_temp_counts < AverageTempArray[14])
-			Temps[4]->max_temp_counts = AverageTempArray[14];
-		if(Temps[4]->max_temp_counts < AverageTempArray[15])
-			Temps[4]->max_temp_counts = AverageTempArray[15];
-		if(Temps[4]->max_temp_counts < AverageTempArray[25])
-			Temps[4]->max_temp_counts = AverageTempArray[25];
-		if(Temps[4]->max_temp_counts < AverageTempArray[26])
-			Temps[4]->max_temp_counts = AverageTempArray[26];
-		if(Temps[4]->max_temp_counts < AverageTempArray[36])
-			Temps[4]->max_temp_counts = AverageTempArray[36];
-		if(Temps[4]->max_temp_counts < AverageTempArray[37])
-			Temps[4]->max_temp_counts = AverageTempArray[37];
-		if(Temps[4]->max_temp_counts < AverageTempArray[47])
-			Temps[4]->max_temp_counts = AverageTempArray[47];
-		if(Temps[4]->max_temp_counts < AverageTempArray[48])
-			Temps[4]->max_temp_counts = AverageTempArray[48];
-		if(Temps[4]->max_temp_counts < AverageTempArray[58])
-			Temps[4]->max_temp_counts = AverageTempArray[58];
-		if(Temps[4]->max_temp_counts < AverageTempArray[59])
-			Temps[4]->max_temp_counts = AverageTempArray[59];
-		if(Temps[4]->max_temp_counts < AverageTempArray[69])
-			Temps[4]->max_temp_counts = AverageTempArray[69];
-		if(Temps[4]->max_temp_counts < AverageTempArray[70])
-			Temps[4]->max_temp_counts = AverageTempArray[70];
-		if(Temps[4]->max_temp_counts < AverageTempArray[80])
-			Temps[4]->max_temp_counts = AverageTempArray[80];
-		if(Temps[4]->max_temp_counts < AverageTempArray[81])
-			Temps[4]->max_temp_counts = AverageTempArray[81];
-		if(Temps[4]->max_temp_counts < AverageTempArray[91])
-			Temps[4]->max_temp_counts = AverageTempArray[91];
-		if(Temps[4]->max_temp_counts < AverageTempArray[92])
-			Temps[4]->max_temp_counts = AverageTempArray[92];
-		if(Temps[4]->max_temp_counts < AverageTempArray[102])
-			Temps[4]->max_temp_counts = AverageTempArray[102];
-		if(Temps[4]->max_temp_counts < AverageTempArray[103])
-			Temps[4]->max_temp_counts = AverageTempArray[103];
-		if(Temps[4]->max_temp_counts < AverageTempArray[112])
-			Temps[4]->max_temp_counts = AverageTempArray[112];
-		if(Temps[4]->max_temp_counts < AverageTempArray[113])
-			Temps[4]->max_temp_counts = AverageTempArray[113];
-		if(Temps[4]->max_temp_counts < AverageTempArray[123])
-			Temps[4]->max_temp_counts = AverageTempArray[123];
-		if(Temps[4]->max_temp_counts < AverageTempArray[124])
-			Temps[4]->max_temp_counts = AverageTempArray[124];
-		if(Temps[4]->max_temp_counts < AverageTempArray[134])
-			Temps[4]->max_temp_counts = AverageTempArray[134];
-		if(Temps[4]->max_temp_counts < AverageTempArray[135])
-			Temps[4]->max_temp_counts = AverageTempArray[135];
-		if(Temps[4]->max_temp_counts < AverageTempArray[145])
-			Temps[4]->max_temp_counts = AverageTempArray[145];
-		if(Temps[4]->max_temp_counts < AverageTempArray[146])
-			Temps[4]->max_temp_counts = AverageTempArray[146];
-		if(Temps[4]->max_temp_counts < AverageTempArray[156])
-			Temps[4]->max_temp_counts = AverageTempArray[156];
-		if(Temps[4]->max_temp_counts < AverageTempArray[157])
-			Temps[4]->max_temp_counts = AverageTempArray[157];
-		if(Temps[4]->max_temp_counts < AverageTempArray[167])
-			Temps[4]->max_temp_counts = AverageTempArray[167];
-		if(Temps[4]->max_temp_counts < AverageTempArray[168])
-			Temps[4]->max_temp_counts = AverageTempArray[168];
+		TESTANDSET_MAXTEMP( 4, 4 );
+		TESTANDSET_MAXTEMP( 4, 14 );
+		TESTANDSET_MAXTEMP( 4, 15 );
+		TESTANDSET_MAXTEMP( 4, 25 );
+		TESTANDSET_MAXTEMP( 4, 26 );
+		TESTANDSET_MAXTEMP( 4, 36 );
+		TESTANDSET_MAXTEMP( 4, 37 );
+		TESTANDSET_MAXTEMP( 4, 47 );
+		TESTANDSET_MAXTEMP( 4, 48 );
+		TESTANDSET_MAXTEMP( 4, 58 );
+		TESTANDSET_MAXTEMP( 4, 59 );
+		TESTANDSET_MAXTEMP( 4, 69 );
+		TESTANDSET_MAXTEMP( 4, 70 );
+		TESTANDSET_MAXTEMP( 4, 80 );
+		TESTANDSET_MAXTEMP( 4, 81 );
+		TESTANDSET_MAXTEMP( 4, 91 );
+		TESTANDSET_MAXTEMP( 4, 92 );
+		TESTANDSET_MAXTEMP( 4, 102 );
+		TESTANDSET_MAXTEMP( 4, 103 );
+		TESTANDSET_MAXTEMP( 4, 112 );
+		TESTANDSET_MAXTEMP( 4, 113 );
+		TESTANDSET_MAXTEMP( 4, 123 );
+		TESTANDSET_MAXTEMP( 4, 124 );
+		TESTANDSET_MAXTEMP( 4, 134 );
+		TESTANDSET_MAXTEMP( 4, 135 );
+		TESTANDSET_MAXTEMP( 4, 145 );
+		TESTANDSET_MAXTEMP( 4, 146 );
+		TESTANDSET_MAXTEMP( 4, 156 );
+		TESTANDSET_MAXTEMP( 4, 157 );
+		TESTANDSET_MAXTEMP( 4, 167 );
+		TESTANDSET_MAXTEMP( 4, 168 );
+        Temps[4]->max_temp = CONVERTTEMP_NCP(Temps[4]->max_temp_counts);
+
 		// M.2
 		Temps[5]->max_temp_counts = AverageTempArray[5];
-		if(Temps[5]->max_temp_counts < AverageTempArray[16])
-			Temps[5]->max_temp_counts = AverageTempArray[16];
-		if(Temps[5]->max_temp_counts < AverageTempArray[27])
-			Temps[5]->max_temp_counts = AverageTempArray[27];
-		if(Temps[5]->max_temp_counts < AverageTempArray[38])
-			Temps[5]->max_temp_counts = AverageTempArray[38];
-		if(Temps[5]->max_temp_counts < AverageTempArray[49])
-			Temps[5]->max_temp_counts = AverageTempArray[49];
-		if(Temps[5]->max_temp_counts < AverageTempArray[60])
-			Temps[5]->max_temp_counts = AverageTempArray[60];
-		if(Temps[5]->max_temp_counts < AverageTempArray[71])
-			Temps[5]->max_temp_counts = AverageTempArray[71];
-		if(Temps[5]->max_temp_counts < AverageTempArray[82])
-			Temps[5]->max_temp_counts = AverageTempArray[82];
-		if(Temps[5]->max_temp_counts < AverageTempArray[93])
-			Temps[5]->max_temp_counts = AverageTempArray[93];
-		if(Temps[5]->max_temp_counts < AverageTempArray[104])
-			Temps[5]->max_temp_counts = AverageTempArray[104];
-		if(Temps[5]->max_temp_counts < AverageTempArray[115])
-			Temps[5]->max_temp_counts = AverageTempArray[115];
-		if(Temps[5]->max_temp_counts < AverageTempArray[126])
-			Temps[5]->max_temp_counts = AverageTempArray[126];
-		if(Temps[5]->max_temp_counts < AverageTempArray[137])
-			Temps[5]->max_temp_counts = AverageTempArray[137];
-		if(Temps[5]->max_temp_counts < AverageTempArray[148])
-			Temps[5]->max_temp_counts = AverageTempArray[148];
-		if(Temps[5]->max_temp_counts < AverageTempArray[159])
-			Temps[5]->max_temp_counts = AverageTempArray[159];
-		if(Temps[5]->max_temp_counts < AverageTempArray[170])
-			Temps[5]->max_temp_counts = AverageTempArray[170];
+		TESTANDSET_MAXTEMP( 5, 16 );
+		TESTANDSET_MAXTEMP( 5, 27 );
+		TESTANDSET_MAXTEMP( 5, 38 );
+		TESTANDSET_MAXTEMP( 5, 49 );
+		TESTANDSET_MAXTEMP( 5, 60 );
+		TESTANDSET_MAXTEMP( 5, 71 );
+		TESTANDSET_MAXTEMP( 5, 82 );
+		TESTANDSET_MAXTEMP( 5, 93 );
+		TESTANDSET_MAXTEMP( 5, 104 );
+		TESTANDSET_MAXTEMP( 5, 115 );
+		TESTANDSET_MAXTEMP( 5, 126 );
+		TESTANDSET_MAXTEMP( 5, 137 );
+		TESTANDSET_MAXTEMP( 5, 148 );
+		TESTANDSET_MAXTEMP( 5, 159 );
+		TESTANDSET_MAXTEMP( 5, 170 );
+        Temps[5]->max_temp = CONVERTTEMP_NCP(Temps[5]->max_temp_counts);
+;
 		// SFF
 		Temps[6]->max_temp_counts = AverageTempArray[114];
-		if(Temps[6]->max_temp_counts < AverageTempArray[125])
-			Temps[6]->max_temp_counts = AverageTempArray[125];
-		if(Temps[6]->max_temp_counts < AverageTempArray[136])
-			Temps[6]->max_temp_counts = AverageTempArray[136];
-		if(Temps[6]->max_temp_counts < AverageTempArray[147])
-			Temps[6]->max_temp_counts = AverageTempArray[147];
+		TESTANDSET_MAXTEMP( 6, 125 );
+		TESTANDSET_MAXTEMP( 6, 136 );
+		TESTANDSET_MAXTEMP( 6, 147 );
+        Temps[6]->max_temp = CONVERTTEMP_NCP(Temps[6]->max_temp_counts);
+
+
 		// MEZZ
 		Temps[7]->max_temp_counts = AverageTempArray[98];
-		if(Temps[7]->max_temp_counts < AverageTempArray[109])
-			Temps[7]->max_temp_counts = AverageTempArray[109];
+		TESTANDSET_MAXTEMP( 7, 109 );
+        Temps[7]->max_temp = CONVERTTEMP_NCP(Temps[7]->max_temp_counts);
+
 		// Board
 		Temps[8]->max_temp_counts = AverageTempArray[6];
-		if(Temps[8]->max_temp_counts < AverageTempArray[7])
-			Temps[8]->max_temp_counts = AverageTempArray[7];
-		if(Temps[8]->max_temp_counts < AverageTempArray[17])
-			Temps[8]->max_temp_counts = AverageTempArray[17];
-		if(Temps[8]->max_temp_counts < AverageTempArray[18])
-			Temps[8]->max_temp_counts = AverageTempArray[18];
-		if(Temps[8]->max_temp_counts < AverageTempArray[28])
-			Temps[8]->max_temp_counts = AverageTempArray[28];
-		if(Temps[8]->max_temp_counts < AverageTempArray[29])
-			Temps[8]->max_temp_counts = AverageTempArray[29];
-		if(Temps[8]->max_temp_counts < AverageTempArray[39])
-			Temps[8]->max_temp_counts = AverageTempArray[39];
-		if(Temps[8]->max_temp_counts < AverageTempArray[40])
-			Temps[8]->max_temp_counts = AverageTempArray[40];
-		if(Temps[8]->max_temp_counts < AverageTempArray[50])
-			Temps[8]->max_temp_counts = AverageTempArray[50];
-		if(Temps[8]->max_temp_counts < AverageTempArray[51])
-			Temps[8]->max_temp_counts = AverageTempArray[51];
-		if(Temps[8]->max_temp_counts < AverageTempArray[61])
-			Temps[8]->max_temp_counts = AverageTempArray[61];
-		if(Temps[8]->max_temp_counts < AverageTempArray[62])
-			Temps[8]->max_temp_counts = AverageTempArray[62];
-		if(Temps[8]->max_temp_counts < AverageTempArray[72])
-			Temps[8]->max_temp_counts = AverageTempArray[72];
-		if(Temps[8]->max_temp_counts < AverageTempArray[73])
-			Temps[8]->max_temp_counts = AverageTempArray[73];
-		if(Temps[8]->max_temp_counts < AverageTempArray[83])
-			Temps[8]->max_temp_counts = AverageTempArray[83];
-		if(Temps[8]->max_temp_counts < AverageTempArray[84])
-			Temps[8]->max_temp_counts = AverageTempArray[84];
-		if(Temps[8]->max_temp_counts < AverageTempArray[94])
-			Temps[8]->max_temp_counts = AverageTempArray[94];
-		if(Temps[8]->max_temp_counts < AverageTempArray[95])
-			Temps[8]->max_temp_counts = AverageTempArray[95];
-		if(Temps[8]->max_temp_counts < AverageTempArray[97])
-			Temps[8]->max_temp_counts = AverageTempArray[97];
-		if(Temps[8]->max_temp_counts < AverageTempArray[105])
-			Temps[8]->max_temp_counts = AverageTempArray[105];
-		if(Temps[8]->max_temp_counts < AverageTempArray[106])
-			Temps[8]->max_temp_counts = AverageTempArray[106];
-		if(Temps[8]->max_temp_counts < AverageTempArray[108])
-			Temps[8]->max_temp_counts = AverageTempArray[108];
-		if(Temps[8]->max_temp_counts < AverageTempArray[116])
-			Temps[8]->max_temp_counts = AverageTempArray[116];
-		if(Temps[8]->max_temp_counts < AverageTempArray[117])
-			Temps[8]->max_temp_counts = AverageTempArray[117];
-		if(Temps[8]->max_temp_counts < AverageTempArray[119])
-			Temps[8]->max_temp_counts = AverageTempArray[119];
-		if(Temps[8]->max_temp_counts < AverageTempArray[127])
-			Temps[8]->max_temp_counts = AverageTempArray[127];
-		if(Temps[8]->max_temp_counts < AverageTempArray[128])
-			Temps[8]->max_temp_counts = AverageTempArray[128];
-		if(Temps[8]->max_temp_counts < AverageTempArray[130])
-			Temps[8]->max_temp_counts = AverageTempArray[130];
-		if(Temps[8]->max_temp_counts < AverageTempArray[138])
-			Temps[8]->max_temp_counts = AverageTempArray[138];
-		if(Temps[8]->max_temp_counts < AverageTempArray[139])
-			Temps[8]->max_temp_counts = AverageTempArray[139];
-		if(Temps[8]->max_temp_counts < AverageTempArray[141])
-			Temps[8]->max_temp_counts = AverageTempArray[141];
-		if(Temps[8]->max_temp_counts < AverageTempArray[149])
-			Temps[8]->max_temp_counts = AverageTempArray[149];
-		if(Temps[8]->max_temp_counts < AverageTempArray[150])
-			Temps[8]->max_temp_counts = AverageTempArray[150];
-		if(Temps[8]->max_temp_counts < AverageTempArray[152])
-			Temps[8]->max_temp_counts = AverageTempArray[152];
-		if(Temps[8]->max_temp_counts < AverageTempArray[160])
-			Temps[8]->max_temp_counts = AverageTempArray[160];
-		if(Temps[8]->max_temp_counts < AverageTempArray[161])
-			Temps[8]->max_temp_counts = AverageTempArray[161];
-		if(Temps[8]->max_temp_counts < AverageTempArray[163])
-			Temps[8]->max_temp_counts = AverageTempArray[163];
-		if(Temps[8]->max_temp_counts < AverageTempArray[171])
-			Temps[8]->max_temp_counts = AverageTempArray[171];
-		if(Temps[8]->max_temp_counts < AverageTempArray[172])
-			Temps[8]->max_temp_counts = AverageTempArray[172];
-		if(Temps[8]->max_temp_counts < AverageTempArray[174])
-			Temps[8]->max_temp_counts = AverageTempArray[174];
+		TESTANDSET_MAXTEMP( 8, 7 );
+		TESTANDSET_MAXTEMP( 8, 17 );
+		TESTANDSET_MAXTEMP( 8, 18 );
+		TESTANDSET_MAXTEMP( 8, 28 );
+		TESTANDSET_MAXTEMP( 8, 29 );
+		TESTANDSET_MAXTEMP( 8, 39 );
+		TESTANDSET_MAXTEMP( 8, 40 );
+		TESTANDSET_MAXTEMP( 8, 50 );
+		TESTANDSET_MAXTEMP( 8, 51 );
+		TESTANDSET_MAXTEMP( 8, 61 );
+		TESTANDSET_MAXTEMP( 8, 62 );
+		TESTANDSET_MAXTEMP( 8, 72 );
+		TESTANDSET_MAXTEMP( 8, 73 );
+		TESTANDSET_MAXTEMP( 8, 83 );
+		TESTANDSET_MAXTEMP( 8, 84 );
+		TESTANDSET_MAXTEMP( 8, 94 );
+		TESTANDSET_MAXTEMP( 8, 95 );
+		TESTANDSET_MAXTEMP( 8, 97 );
+		TESTANDSET_MAXTEMP( 8, 105 );
+		TESTANDSET_MAXTEMP( 8, 106 );
+		TESTANDSET_MAXTEMP( 8, 108 );
+		TESTANDSET_MAXTEMP( 8, 116 );
+		TESTANDSET_MAXTEMP( 8, 117 );
+		TESTANDSET_MAXTEMP( 8, 119 );
+		TESTANDSET_MAXTEMP( 8, 127 );
+		TESTANDSET_MAXTEMP( 8, 128 );
+		TESTANDSET_MAXTEMP( 8, 130 );
+		TESTANDSET_MAXTEMP( 8, 138 );
+		TESTANDSET_MAXTEMP( 8, 139 );
+		TESTANDSET_MAXTEMP( 8, 141 );
+		TESTANDSET_MAXTEMP( 8, 149 );
+		TESTANDSET_MAXTEMP( 8, 150 );
+		TESTANDSET_MAXTEMP( 8, 152 );
+		TESTANDSET_MAXTEMP( 8, 160 );
+		TESTANDSET_MAXTEMP( 8, 161 );
+		TESTANDSET_MAXTEMP( 8, 163 );
+		TESTANDSET_MAXTEMP( 8, 171 );
+		TESTANDSET_MAXTEMP( 8, 172 );
+		TESTANDSET_MAXTEMP( 8, 174 );
+        Temps[8]->max_temp = CONVERTTEMP_NCP(Temps[8]->max_temp_counts);
+
 		// Air
 		Temps[9]->max_temp_counts = AverageTempArray[9];
-		if(Temps[9]->max_temp_counts < AverageTempArray[10])
-			Temps[9]->max_temp_counts = AverageTempArray[10];
-		if(Temps[9]->max_temp_counts < AverageTempArray[20])
-			Temps[9]->max_temp_counts = AverageTempArray[20];
-		if(Temps[9]->max_temp_counts < AverageTempArray[21])
-			Temps[9]->max_temp_counts = AverageTempArray[21];
-		if(Temps[9]->max_temp_counts < AverageTempArray[31])
-			Temps[9]->max_temp_counts = AverageTempArray[31];
-		if(Temps[9]->max_temp_counts < AverageTempArray[32])
-			Temps[9]->max_temp_counts = AverageTempArray[32];
-		if(Temps[9]->max_temp_counts < AverageTempArray[42])
-			Temps[9]->max_temp_counts = AverageTempArray[42];
-		if(Temps[9]->max_temp_counts < AverageTempArray[43])
-			Temps[9]->max_temp_counts = AverageTempArray[43];
-		if(Temps[9]->max_temp_counts < AverageTempArray[53])
-			Temps[9]->max_temp_counts = AverageTempArray[53];
-		if(Temps[9]->max_temp_counts < AverageTempArray[54])
-			Temps[9]->max_temp_counts = AverageTempArray[54];
-		if(Temps[9]->max_temp_counts < AverageTempArray[64])
-			Temps[9]->max_temp_counts = AverageTempArray[64];
-		if(Temps[9]->max_temp_counts < AverageTempArray[65])
-			Temps[9]->max_temp_counts = AverageTempArray[65];
-		if(Temps[9]->max_temp_counts < AverageTempArray[75])
-			Temps[9]->max_temp_counts = AverageTempArray[75];
-		if(Temps[9]->max_temp_counts < AverageTempArray[76])
-			Temps[9]->max_temp_counts = AverageTempArray[76];
-		if(Temps[9]->max_temp_counts < AverageTempArray[86])
-			Temps[9]->max_temp_counts = AverageTempArray[86];
-		if(Temps[9]->max_temp_counts < AverageTempArray[87])
-			Temps[9]->max_temp_counts = AverageTempArray[87];
-		if(Temps[9]->max_temp_counts < AverageTempArray[96])
-			Temps[9]->max_temp_counts = AverageTempArray[96];
-		if(Temps[9]->max_temp_counts < AverageTempArray[107])
-			Temps[9]->max_temp_counts = AverageTempArray[107];
-		if(Temps[9]->max_temp_counts < AverageTempArray[118])
-			Temps[9]->max_temp_counts = AverageTempArray[118];
-		if(Temps[9]->max_temp_counts < AverageTempArray[129])
-			Temps[9]->max_temp_counts = AverageTempArray[129];
-		if(Temps[9]->max_temp_counts < AverageTempArray[140])
-			Temps[9]->max_temp_counts = AverageTempArray[140];
-		if(Temps[9]->max_temp_counts < AverageTempArray[151])
-			Temps[9]->max_temp_counts = AverageTempArray[151];
-		if(Temps[9]->max_temp_counts < AverageTempArray[162])
-			Temps[9]->max_temp_counts = AverageTempArray[162];
-		if(Temps[9]->max_temp_counts < AverageTempArray[173])
-			Temps[9]->max_temp_counts = AverageTempArray[173];
+		TESTANDSET_MAXTEMP( 9, 10 );
+		TESTANDSET_MAXTEMP( 9, 20 );
+		TESTANDSET_MAXTEMP( 9, 21 );
+		TESTANDSET_MAXTEMP( 9, 31 );
+		TESTANDSET_MAXTEMP( 9, 32 );
+		TESTANDSET_MAXTEMP( 9, 42 );
+		TESTANDSET_MAXTEMP( 9, 43 );
+		TESTANDSET_MAXTEMP( 9, 53 );
+		TESTANDSET_MAXTEMP( 9, 54 );
+		TESTANDSET_MAXTEMP( 9, 64 );
+		TESTANDSET_MAXTEMP( 9, 65 );
+		TESTANDSET_MAXTEMP( 9, 75 );
+		TESTANDSET_MAXTEMP( 9, 76 );
+		TESTANDSET_MAXTEMP( 9, 86 );
+		TESTANDSET_MAXTEMP( 9, 87 );
+		TESTANDSET_MAXTEMP( 9, 96 );
+		TESTANDSET_MAXTEMP( 9, 107 );
+		TESTANDSET_MAXTEMP( 9, 118 );
+		TESTANDSET_MAXTEMP( 9, 129 );
+		TESTANDSET_MAXTEMP( 9, 140 );
+		TESTANDSET_MAXTEMP( 9, 151 );
+		TESTANDSET_MAXTEMP( 9, 162 );
+		TESTANDSET_MAXTEMP( 9, 173 );
+        Temps[9]->max_temp = CONVERTTEMP_JT(Temps[9]->max_temp_counts);
 
 		SetMaxTemp();
 	}
 }
 
-uint16_t ConvertTemp(uint16_t counts_)
+/*uint16_t ConvertTemp(uint16_t counts_)
 {
 	tempNum = RES_DIV*(double)(4096 - counts_);
 	tempNum /= (double)4096;
@@ -418,6 +334,28 @@ uint16_t ConvertTemp(uint16_t counts_)
 	T -= C_TO_K; 							// converts to C
 	T *= 10; 								// converts to C * 10
 	return (uint16_t)T; 					// returns at uint16_t
+}*/
+
+//Thermistor temperature converter
+uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
+{
+    double R         = 0;                   // measured resistance of NTC
+    double tempDen   = 0;                   // denominator of temp calc
+    double tempNum   = 0;                   // numerator of temp calc
+    double T         = 0;                   // result of temp calc in Kelvin
+
+    //Calculate resistance reading
+    tempNum = RES_DIV*(double)(4096 - counts_);
+    tempNum /= (double)4096;
+    tempDen = (double)(4096 - counts_)/(double)4096;
+    tempDen = (double)1 - tempDen;
+    R = tempNum / tempDen;                  // measured resistance value of NTC
+
+    tempDen = log(R / r_inf_);               // used natural log to calculate the denominator of temp calc
+    T = beta_ / tempDen;                  // temp in K
+    T -= C_TO_K;                            // converts to C
+    T *= 10;                                // converts to C * 10
+    return (uint16_t) T;                     // returns at uint16_t
 }
 
 void EvaluateTempData(void)
@@ -426,7 +364,8 @@ void EvaluateTempData(void)
 	i = 0;
 	while(i < NUM_TEMPS - 2)
 	{
-		Temps[i]->max_temp = ConvertTemp(Temps[i]->max_temp_counts); 		// convert measurement from counts to temp
+	    //moved this to ProcessTempData to allow closer control of the type of thermistor being converted
+		//Temps[i]->max_temp = CONVERTTEMP_JT(Temps[i]->max_temp_counts); 		// convert measurement from counts to temp
 
 		if(Temps[i]->max_temp > RHU_TEMP_MAX_LIMIT) 				//
 		{
@@ -447,8 +386,7 @@ void EvaluateTempData(void)
 
 void InitTemp(void)
 {
-	static int i;
-	i = 0;
+	int i = 0;
 
 	while(i<NUM_TEMPS)
 	{

@@ -11,6 +11,7 @@
 //===========================================================================
 #include "../HW/Analog.h"
 
+#include "stdio.h"
 //===========================================================================
 // Defines
 //===========================================================================
@@ -75,6 +76,7 @@ void ProcessAnalogResult(void)
 	{
 		ProcessNtcSet(AnalogChannels.adcmux); 			// Average 12x10 samples that are ready and place into averaged PTC result array
 		ProcessCurrentSet(AnalogChannels.adcmux);  		// Process current sense info
+		printf("ProcessAnalogResult:: AnalogChannels.adcmux = %d\n", AnalogChannels.adcmux );
 		if(AnalogChannels.adcmux == 15) 				// if this is the 16th ADC MUX channel then set PTC ready
 		{
 			SetNtcReady();
