@@ -76,8 +76,10 @@ void InitializeProgram(void)
 	ExtGpioInit(); 							// Initialized eGPIOs
     InitLeds();                             // initilze LEDS (off) // startup sweep?
 
+    InitDutySW();                           // read duty-cycle switches
+    InitSysId();                            // read system ID
+
 	InitializeRHUs(); 						// Initialize RHUS
-	InitSysId(); 							// read system ID
 	InitRhuWatchdog(); 						// Init Rhu Watchdog
 
 	InitNtc(); 								// initialize analog/ptc section

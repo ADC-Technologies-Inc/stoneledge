@@ -107,8 +107,6 @@ void LedWdClear(Uint16 Wd_)
 
 #define DELAY 40000
 void LedSweep( void ){
-   int i = 0, x = 0;
-
    LedSweep_Base(0, 1);
    LedSweep_Base(0, 0);
    LedSweep_Base(0, 1);

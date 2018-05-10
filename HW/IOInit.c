@@ -413,7 +413,9 @@ void ExtGpioSet(uint16_t pin_, uint16_t set_)
 	uint16_t pin_number;
 	uint16_t accm;
 
+#ifdef DEBUG_IOINIT
 	uint16_t read1, read2, written;
+#endif
 
 	if(pin_ > 807)
 		accm = 2;
@@ -424,7 +426,10 @@ void ExtGpioSet(uint16_t pin_, uint16_t set_)
 	pin_number = pin_ % 100;
 
 	ExtGpioReadSet(accm, ext_gpio_rx_buffer);
+#ifdef DEBUG_IOINIT
 	read1 = ext_gpio_rx_buffer[0];
+#endif
+
 	if(set_) 													// if request is to set pin high
 	{
 		ext_gpio_rx_buffer[0] |= (1 << pin_number);/*bit_arrays[pin_number];*/ 		// set pin high
@@ -433,12 +438,16 @@ void ExtGpioSet(uint16_t pin_, uint16_t set_)
 	{
 		ext_gpio_rx_buffer[0] &= ~(1 << pin_number);/*(bit_arrays[pin_number]);*/ 	// set pin low
 	}
+#ifdef DEBUG_IOINIT
 	written = ext_gpio_rx_buffer[0];
+#endif
 	GpioSetDirArray(accm, ext_gpio_rx_buffer[0]); 				// write new high/low array to chip
 
 
 	ExtGpioReadSet(accm, ext_gpio_rx_buffer);
+#ifdef DEBUG_IOINIT
 	read2 = ext_gpio_rx_buffer[0];
+#endif
 
 #ifdef DEBUG_IOINIT
     printf("ExtGpioSet:: Pin: %d; Set %d; accm: "PRINTF_BINSTR8"; buffer: "PRINTF_BINSTR8" read1: "PRINTF_BINSTR8"; read2: "PRINTF_BINSTR8"; written: "PRINTF_BINSTR8"\n", pin_, set_, PRINTF_BINSTR8_ARGS(accm), PRINTF_BINSTR8_ARGS(ext_gpio_rx_buffer[0]),PRINTF_BINSTR8_ARGS(read1), PRINTF_BINSTR8_ARGS(read2), PRINTF_BINSTR8_ARGS(written) );

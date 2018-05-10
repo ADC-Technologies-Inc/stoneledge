@@ -22,6 +22,7 @@
 #include "../HW/Analog.h"
 #include "../HW/IOInit.h"
 #include "ntc.h"
+#include "duty_sw.h"
 
 void InitializeProgram(void);
 void StartupTest(void);
