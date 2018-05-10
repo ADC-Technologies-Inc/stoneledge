@@ -63,7 +63,7 @@ void ProcessNtcSet(uint16_t set_)
 		avg += (tempArrays[i])[9];
 		avg /= 10;
 
-		avgTempArray[((set_)*11)+i] = avg/10;
+		avgTempArray[((set_)*11)+i] = avg;
 		i++;
 	}
 	tempCycle = set_;

@@ -5,7 +5,7 @@
  *      Author: Zack Lyzen
  */
 
-//#define DEBUG_TEMPS
+#define DEBUG_TEMPS
 
 #ifdef DEBUG_TEMPS
 #include "ntd_debug.h"
