@@ -95,7 +95,7 @@ void InitEPwm()
    EPwm1Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
    EPwm1Regs.TBCTL.bit.PHSEN 		= 0;		     		// Phase loading disabled
    EPwm1Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
-   EPwm1Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_DISABLE;		// No Sync
+   EPwm1Regs.TBCTL.bit.SYNCOSEL 	= TB_CTR_ZERO;			// output sync pulse when counter == 0
    EPwm1Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
    EPwm1Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm1Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
@@ -121,9 +121,9 @@ void InitEPwm()
    EPwm2Regs.TBPHS.half.TBPHS 		= 0;					// Set Phase register to zero // all rhu's on same phase
    EPwm2Regs.TBCTR 					= 0;					// clear TB counter
    EPwm2Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
-   EPwm2Regs.TBCTL.bit.PHSEN 		= 0;		     		// Phase loading disabled
+   EPwm2Regs.TBCTL.bit.PHSEN 		= TB_ENABLE;		    // Phase loading enabled
    EPwm2Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
-   EPwm2Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_DISABLE;		// No Sync
+   EPwm2Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
    EPwm2Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
    EPwm2Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm2Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
@@ -144,9 +144,9 @@ void InitEPwm()
    EPwm3Regs.TBPHS.half.TBPHS 		= 0;					// Set Phase register to zero // all rhu's on same phase
    EPwm3Regs.TBCTR 					= 0;					// clear TB counter
    EPwm3Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
-   EPwm3Regs.TBCTL.bit.PHSEN 		= 0;		     		// Phase loading disabled
+   EPwm3Regs.TBCTL.bit.PHSEN 		= TB_ENABLE;		    // Phase loading enabled
    EPwm3Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
-   EPwm3Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_DISABLE;		// No Sync
+   EPwm3Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
    EPwm3Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
    EPwm3Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm3Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
@@ -167,9 +167,9 @@ void InitEPwm()
    EPwm6Regs.TBPHS.half.TBPHS 		= 0;					// Set Phase register to zero
    EPwm6Regs.TBCTR 					= 0;					// clear TB counter
    EPwm6Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
-   EPwm6Regs.TBCTL.bit.PHSEN 		= 0;		     		// Phase loading disabled
+   EPwm6Regs.TBCTL.bit.PHSEN 		= TB_ENABLE;		    // Phase loading enabled
    EPwm6Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
-   EPwm6Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_DISABLE;		// No Sync
+   EPwm6Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
    EPwm6Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
    EPwm6Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm6Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A

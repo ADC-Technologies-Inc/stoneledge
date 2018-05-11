@@ -35,3 +35,9 @@ Release/
 .xdchelp
 .config/
 .launches/
+.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.cdt.core.prefs
+*.prefs
+.metadata/.plugins/org.eclipse.e4.workbench/workbench.xmi
+*.mark
+*.properties
+*.xml
