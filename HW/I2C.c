@@ -114,14 +114,27 @@ void i2c_tx(uint16_t *buf_, uint16_t count_, uint16_t addr_)
 {
 //    printf("i2c_tx():: count= %d; addr_= %d\n", count_, addr_);
     int retry = 0;
+    uint16_t tempIER = 0;
 
 re_enter:
 
+    DINT;       //disable group 3 interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
+
 	while(I2caRegs.I2CSTR.bit.BB || tx_flag || rx_flag ); //Wait for bus and device to be available
+
+	//Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
+	if (!tempIER && IER & 0x03){
+	    tempIER = 0x03;
+	    IER &= 0xFFFB;          //disable group 3 register
+	}
+
+	EINT;                       //re-enable interrupts
+
+	tx_flag = 1;
+	fail_flag = 0;
 
 	tx = buf_;
 	txinc = 0;
-	tx_flag = 1;
 	txready = 0;
 
 	//Setup for addressing segment
@@ -131,7 +144,7 @@ re_enter:
 	//Enable for XRDY [address gone] and NACK [unhappy bunny on the other end] interrupts in addition to the Stop and ARDY Inters.
 	I2caRegs.I2CIER.bit.XRDY = 1;       //Enable XMIT Ready Interrupt
 	I2caRegs.I2CIER.bit.NACK = 1;       //Enable NACK Interrupt
-	I2caRegs.I2CIER.bit.SCD = 1;      //Stop Condition, set in init
+	I2caRegs.I2CIER.bit.SCD = 1;        //Stop Condition, set in init
 	I2caRegs.I2CIER.bit.ARDY = 1;	    //Registers Ready, set in init
 
 	//printf("i2c_tx():: I2CCNT: %d, I2CSAR: %d, I2CIER: %d!\n", I2caRegs.I2CCNT, I2caRegs.I2CSAR, I2caRegs.I2CIER);
@@ -146,11 +159,20 @@ re_enter:
     if ( fail_flag ){
         if (retry==3){
             printf("i2c_tx():: Too many retries!\n");
-            return;
+            goto exit_;
         }
         retry++;
         goto re_enter;
     }
+
+exit_:
+    DINT;
+    //Restore register
+    if (tempIER){
+        IER |= 0x03;
+        IER &= 0x03;
+    }
+    EINT;
 
 	//printf("i2c_tx():: I exited!\n");
 	return;
@@ -160,14 +182,26 @@ void i2c_rx(uint16_t * buf, uint16_t count, uint16_t loc, uint16_t addr_)
 {
     //printf("i2c_rx():: count= %d; addr_= %d\n", count, addr_);
     int retry = 0;
+    uint16_t tempIER = 0;
 
 re_enter:
 
-	while(I2caRegs.I2CSTR.bit.BB || tx_flag || rx_flag);			// wait for previous TX/RX to complete
+    DINT;       //disable group 3 interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
 
+    while(I2caRegs.I2CSTR.bit.BB || tx_flag || rx_flag ); //Wait for bus and device to be available
+
+    //Save Group 3 status
+    if (!tempIER && IER & 0x03){
+        tempIER = 0x03;
+        IER &= 0xFFFB;          //disable group 3 register
+    }
+
+    EINT;
+
+	rx_flag = 1;
+	fail_flag = 0;
 	rx = buf;
 	rxinc = 0;
-	rx_flag = 1;
 	rxready = 0;
 	// set slave address (NA in this code)
 
@@ -195,11 +229,19 @@ re_enter:
     if ( fail_flag ){
         if (retry==3){
             printf("i2c_rx():: Too many retries!\n");
-            return;
+            goto exit_;
         }
         retry++;
         goto re_enter;
     }
+exit_:
+    DINT;
+    //Restore register
+    if (tempIER){
+        IER |= 0x03;
+        IER &= 0x03;
+    }
+    EINT;
 
     //printf("i2c_tx():: I exited too!\n");
     return;
