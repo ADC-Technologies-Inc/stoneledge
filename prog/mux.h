@@ -9,13 +9,10 @@
 #define PROG_MUX_H_
 
 #include <stdint.h>
-#include "../bits.h"
 
-#include "../HW/IOInit.h"
-
-void InitMux(void);
-uint16_t GetMux(void);
-void SetMux(uint16_t channel_);
+void MUX_Init(void);
+uint16_t MUX_Get(void);
+void MUX_Set(uint16_t channel_);
 
 
 #endif /* PROG_MUX_H_ */
