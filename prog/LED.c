@@ -7,113 +7,99 @@
  *
  *  N. Davidson
  *  - added LED sweep
+ *  - refactored
  */
 
 #include "LED.h"
 #include "stdio.h"
-
-//I really don't mind the name
 #include "DSP2803x_Examples.h"
 
 //#define DEBUG_LED
 
-static Uint16 ledPins[15];
-static Uint16 ledWdPins[9];
+/*PRIVATE VARS*/
+struct LED_Pins_ {
+    uint16_t pin;               //pin GPIO
+    uint16_t state;             //pin state (on/off)
+}; 
 
-//decls
-void LedSweep( void );
-void LedSweep_Base(int dir_, int set_);
+struct LED_Pins_ LED_Pins[15];// = {0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0};
 
-void InitLeds(void)
-{
-	ledPins[LED_POWER]    = 0;
-	ledPins[LED_MGMT]     = 101;
-	ledPins[LED_M1] 	  = 0;
-	ledPins[LED_ONGOING]  = 205;
-	ledPins[LED_TCO]      = 204;
-	ledPins[LED_TEMP]     = 203;
-	ledPins[LED_MEZZ]     = 202;
-	ledPins[LED_SFF_GRP]  = 201;
-	ledPins[LED_M_2_GRP]  = 207; //200 changed to 207
-	ledPins[LED_DIMM_GRP] = 107;
-	ledPins[LED_RAM]      = 106;
-	ledPins[LED_MISC]     = 105;
-	ledPins[LED_CPU2]     = 104;
-	ledPins[LED_CPU1]     = 103;
-	ledPins[LED_M2]       = 0;
-
-	ledWdPins[0] = ledPins[LED_CPU1];
-	ledWdPins[1] = ledPins[LED_CPU2];
-	ledWdPins[2] = ledPins[LED_MISC];
-	ledWdPins[3] = ledPins[LED_RAM];
-	ledWdPins[4] = ledPins[LED_DIMM_GRP];
-	ledWdPins[5] = ledPins[LED_M_2_GRP];
-	ledWdPins[6] = ledPins[LED_SFF_GRP];
-	ledWdPins[7] = ledPins[LED_MEZZ];
-	ledWdPins[8] = ledPins[LED_ONGOING];
+//static Uint16 LED_Pins_ByName[15];
+//static Uint16 LED_Pins_ByRHU[9];
 
 
-	ExtGpioSet(ledPins[LED_MGMT], 0);
-	ExtGpioSet(ledPins[LED_ONGOING], 0);
-	ExtGpioSet(ledPins[LED_TCO], 0);
-	ExtGpioSet(ledPins[LED_TEMP], 0);
-	ExtGpioSet(ledPins[LED_MEZZ], 0);
-	ExtGpioSet(ledPins[LED_SFF_GRP], 0);
-	ExtGpioSet(ledPins[LED_M_2_GRP], 0);
-	ExtGpioSet(ledPins[LED_DIMM_GRP], 0);
-	ExtGpioSet(ledPins[LED_RAM], 0);
-	ExtGpioSet(ledPins[LED_MISC], 0);
-	ExtGpioSet(ledPins[LED_CPU2], 0);
-	ExtGpioSet(ledPins[LED_CPU1], 0);
 
-	LedSweep();
+/*PRIVATE FUNCTIONS*/
+static void LED_Sweep( void );
+static void LED_SweepBase(int dir_, int set_);
+
+/*FUNCTIONS*/
+void LED_InitLeds(void)
+{    
+	LED_Pins[LED_POWER].pin    = 0;
+	LED_Pins[LED_MGMT].pin     = 101;
+	LED_Pins[LED_M1].pin       = 0;
+	LED_Pins[LED_ONGOING].pin  = 205;
+	LED_Pins[LED_TCO].pin      = 204;
+	LED_Pins[LED_TEMP].pin     = 203;
+	LED_Pins[LED_MEZZ].pin     = 202;
+	LED_Pins[LED_SFF_GRP].pin  = 201;
+	LED_Pins[LED_M_2_GRP].pin  = 207; //200 changed to 207 to fix board bug
+	LED_Pins[LED_DIMM_GRP].pin = 107;
+	LED_Pins[LED_RAM].pin      = 106;
+	LED_Pins[LED_MISC].pin     = 105;
+	LED_Pins[LED_CPU2].pin     = 104;
+	LED_Pins[LED_CPU1].pin     = 103;
+	LED_Pins[LED_M2].pin       = 0;
+
+	ExtGpioSet(LED_Pins[LED_MGMT].pin, 0);
+	ExtGpioSet(LED_Pins[LED_ONGOING].pin, 0);
+	ExtGpioSet(LED_Pins[LED_TCO].pin, 0);
+	ExtGpioSet(LED_Pins[LED_TEMP].pin, 0);
+	ExtGpioSet(LED_Pins[LED_MEZZ].pin, 0);
+	ExtGpioSet(LED_Pins[LED_SFF_GRP].pin, 0);
+	ExtGpioSet(LED_Pins[LED_M_2_GRP].pin, 0);
+	ExtGpioSet(LED_Pins[LED_DIMM_GRP].pin, 0);
+	ExtGpioSet(LED_Pins[LED_RAM].pin, 0);
+	ExtGpioSet(LED_Pins[LED_MISC].pin, 0);
+	ExtGpioSet(LED_Pins[LED_CPU2].pin, 0);
+	ExtGpioSet(LED_Pins[LED_CPU1].pin, 0);
+
+	LED_Sweep();
 }
 
-void SetLed(Uint16 req_)
-{
+void LED_Set(Uint16 name_){
 #ifdef DEBUG_LED
-    printf( "SetLed() called with req_=%d\n", req_);
+    printf( "LED_Set() called with name_=%d\n", name_);
 #endif
 
-    if ( req_ < 15 && ledPins[req_] ) ExtGpioSet(ledPins[req_], 1);
+    if ( name_ < 15 && LED_Pins[name_].pin && !LED_Pins[name_].state ) {
+        ExtGpioSet(LED_Pins[name_].pin, 1);
+        LED_Pins[name_].state = 1;
+    }
 }
 
-void ClearLed(Uint16 req_)
-{
+void LED_Clear(Uint16 name_){
 #ifdef DEBUG_LED
-    printf( "ClearLed() called with req_=%d\n", req_);
+    printf( "LED_Clear() called with name_=%d\n", name_);
 #endif
 
-    if ( req_ < 15 && ledPins[req_] ) ExtGpioSet(ledPins[req_], 0);
+    if ( name_ < 15 && LED_Pins[name_].pin && LED_Pins[name_].state ) {
+        ExtGpioSet(LED_Pins[name_].pin, 0);
+        LED_Pins[name_].state = 0;
+    }
 }
 
-void LedWdSet(Uint16 Wd_)
-{
-#if DEBUG_LED
-    printf( "LedWdSet() called with Wd_=%d\n", Wd_);
-#endif
-
-    if ( Wd_ < 9 && ledWdPins[Wd_] ) ExtGpioSet(ledWdPins[Wd_], 1);
+void LED_Sweep( void ){
+   LED_SweepBase(0, 1);
+   LED_SweepBase(0, 0);
+   LED_SweepBase(0, 1);
+   LED_SweepBase(0, 0);
 }
 
-void LedWdClear(Uint16 Wd_)
-{
-#if DEBUG_LED
-    printf( "LedWdClear() called with Wd_=%d\n", Wd_);
-#endif
+#define LED_SWEEP_DELAY 40000
 
-    if ( Wd_ < 9 && ledWdPins[Wd_] ) ExtGpioSet(ledWdPins[Wd_], 0);
-}
-
-#define DELAY 40000
-void LedSweep( void ){
-   LedSweep_Base(0, 1);
-   LedSweep_Base(0, 0);
-   LedSweep_Base(0, 1);
-   LedSweep_Base(0, 0);
-}
-
-void LedSweep_Base(int dir_, int set_){
+void LED_SweepBase(int dir_, int set_){
     int i;
 
     for (\
@@ -122,19 +108,19 @@ void LedSweep_Base(int dir_, int set_){
             ; (dir_) ? i++ : i--\
             ){
         switch (i){
-        case 0: { ExtGpioSet(ledPins[LED_MGMT], set_); break; }
-        case 1: { ExtGpioSet(ledPins[LED_ONGOING], set_); break; }
-        case 2: { ExtGpioSet(ledPins[LED_TCO], set_); break; }
-        case 3: { ExtGpioSet(ledPins[LED_TEMP], set_); break; }
-        case 4: { ExtGpioSet(ledPins[LED_MEZZ], set_); break; }
-        case 5: { ExtGpioSet(ledPins[LED_SFF_GRP], set_); break; }
-        case 6: { ExtGpioSet(ledPins[LED_M_2_GRP], set_); break; }
-        case 7: { ExtGpioSet(ledPins[LED_DIMM_GRP], set_); break; }
-        case 8: { ExtGpioSet(ledPins[LED_RAM], set_); break; }
-        case 9: { ExtGpioSet(ledPins[LED_MISC], set_); break; }
-        case 10: { ExtGpioSet(ledPins[LED_CPU2], set_); break; }
-        case 11: { ExtGpioSet(ledPins[LED_CPU1], set_); break; }
+        case 0: { ExtGpioSet(LED_Pins[LED_MGMT].pin, set_); break; }
+        case 1: { ExtGpioSet(LED_Pins[LED_ONGOING].pin, set_); break; }
+        case 2: { ExtGpioSet(LED_Pins[LED_TCO].pin, set_); break; }
+        case 3: { ExtGpioSet(LED_Pins[LED_TEMP].pin, set_); break; }
+        case 4: { ExtGpioSet(LED_Pins[LED_MEZZ].pin, set_); break; }
+        case 5: { ExtGpioSet(LED_Pins[LED_SFF_GRP].pin, set_); break; }
+        case 6: { ExtGpioSet(LED_Pins[LED_M_2_GRP].pin, set_); break; }
+        case 7: { ExtGpioSet(LED_Pins[LED_DIMM_GRP].pin, set_); break; }
+        case 8: { ExtGpioSet(LED_Pins[LED_RAM].pin, set_); break; }
+        case 9: { ExtGpioSet(LED_Pins[LED_MISC].pin, set_); break; }
+        case 10: { ExtGpioSet(LED_Pins[LED_CPU2].pin, set_); break; }
+        case 11: { ExtGpioSet(LED_Pins[LED_CPU1].pin, set_); break; }
         }
-        DELAY_US(DELAY);
+        DELAY_US(LED_SWEEP_DELAY);
     }
 }

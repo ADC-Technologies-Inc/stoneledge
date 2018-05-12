@@ -5,26 +5,33 @@
  *      Author: Zack Lyzen
  */
 
-//===========================================================================
-// Includes
-//===========================================================================
+#define DEBUG_RHU
 
 #include "../prog/rhu.h"
+
+
+#ifdef DEBUG_RHU
+#include "ntd_debug.h"
+#endif
+
+/*structs*/
+struct rhu_state__{
+    uint16_t    en;
+    uint16_t    has_power;
+    uint16_t    duty;
+};
+
 //===========================================================================
 // private variables
 //===========================================================================
 
 #ifdef LOW_DUTY_MODE
-static Uint16 duties[4] = {0, 50, 75, 100};
+const static uint16_t DUTY_TABLE[4] = {0, 50, 75, 100};
 #else
-static Uint16 duties[4] = {0, 500, 75, 1000};
+const static uint16_t DUTY_TABLE[4] = {0, 500, 75, 1000};
 #endif
-static Uint16 tcos[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-static Uint16 tco_gpio[8] = {504, 505, 506, 500, 600, 601, 602, 603};
-static Uint16 rhus[8] = {CPU1, CPU2, MISC, RAM, DIMM_GRP, M_2_GRP, SFF_GRP, MEZZ};
-static Uint16 duty_cycle_settings[8] = {0,0,0,0,0,0,0,0}; 		// array of duty cycle settings for each RHU
-static Uint16 rhu_en_array  = 0; 								// bit array, 0 is disabled RHU and 1 is enabled RHU
 
+static struct rhu_state__ rhu_state[RHU_COUNT] = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
 
 /*-----------------------------------------------------------------------------------------------------------
  *
@@ -32,219 +39,200 @@ static Uint16 rhu_en_array  = 0; 								// bit array, 0 is disabled RHU and 1 i
  *
  -----------------------------------------------------------------------------------------------------------*/
 
-void EnableRhuRelay(void)
-{
+/*Turn on the 48v part of the board (RHUs)*/
+void RHU_Enable48V(void){
+#ifdef DEBUG_RHU
+    printf("RHU_Enable48V():: Setting GPIO40 ON\n" );
+#endif
+
 	GpioDataRegs.GPBSET.bit.GPIO40 = 0x01;
 }
 
-void DisableRhuRelay(void)
+/*Turn on the 48v part of the board (RHUs)*/
+void RHU_Disable48V(void)
 {
+#ifdef DEBUG_RHU
+    printf("RHU_Disable48V():: Clearing GPIO40\n" );
+#endif
+
 	GpioDataRegs.GPBCLEAR.bit.GPIO40 = 0x01;
 }
 
-Uint16 GetRhuRelayState(void)
-{
-	return GpioDataRegs.GPBDAT.bit.GPIO40;
+/*Verify that the fust is on*/
+Uint16 RHU_Get48VFuse(void){
+    uint16_t state = GpioDataRegs.GPADAT.bit.GPIO25;
+
+    #ifdef DEBUG_RHU
+    printf("RHU_Get48VFuse():: Returning 48V Fuse (GPIO40) state as %d\n", state );
+    #endif
+
+	return state;
 }
 
-void CheckTco(Uint16 tco_, Uint16 duty_cycle_)
+/*This function is called when RHU TCOs should be read instantaneously, will be called from within ePWM1 ISR- quick as poss.*/
+void RHU_PWMCallback( void ){
+    uint16_t toggle = 0;
+    uint16_t gpio_set;
+
+    /*
+     * Poll RHU power status sets and save data for next control loop read, we do one at a time to minimize i2c traffic while the duty cycle is running
+     *
+     * Since we're in a high-priority ISR we do not do the work of verifying here, we do that at the next control loop iteration.
+     *
+     * */
+    if (toggle){
+        //Pull GPIO 500 data set
+        gpio_set = ExtGpioGetSet(5);
+
+        /*/Update local status
+         *
+         * 0x10 - 504              = RHU1 = CPU1
+         * 0x20 - 505              = RHU2 = CPU2
+         * 0x40 - 506              = RHU3 = RAM
+         * 0x01 - 500 (was 507)    = RHU4 = MISC
+         *
+         */
+
+        rhu_state[CPU1].has_power = gpio_set & 0x10;
+        rhu_state[CPU2].has_power = gpio_set & 0x20;
+        rhu_state[RAM].has_power = gpio_set & 0x40;
+        rhu_state[MISC].has_power = gpio_set & 0x01;
+    }else{
+        //Pull GPIO 600 data set
+        gpio_set = ExtGpioGetSet(6);
+
+        /*/Update local status
+         *
+         * 0x01 - 600              = RHU5 = M.2
+         * 0x02 - 601              = RHU6 = DIMM
+         * 0x04 - 602              = RHU7 = MEZZ
+         * 0x08 - 603              = RHU8 = SFF
+         *
+         */
+
+        rhu_state[M_2_GRP].has_power = gpio_set & 0x01;
+        rhu_state[DIMM_GRP].has_power = gpio_set & 0x02;
+        rhu_state[MEZZ].has_power = gpio_set & 0x04;
+        rhu_state[SFF_GRP].has_power = gpio_set & 0x08;
+    }
+}
+
+void RHU_VerifyRHU(void)
 {
-	if(duty_cycle_>0)
-	{
-		if(ExtGpioRead(tco_gpio[tco_]) == 0)
-		{
-			tcos[tco_] = 1;
-		}
+#ifdef DEBUG_RHU
+    printf("RHU_VerifyRHU():: Go through TCO status and check for errors\n" );
+#endif
+
+	int i = 0, x;
+
+	while(i < RHU_COUNT){
+	    //nb. we turn on has_power when we enable to ensure we don't get caught out by ControlLoop calling this before RHU_PWMCallback() has had a chance to be called
+	    if (rhu_state[i].duty && rhu_state[i].en && !rhu_state[i].has_power ) {
+            #ifdef DEBUG_RHU
+            printf("RHU_VerifyRHU():: Flagging error on TCO %d\n", i );
+            #endif
+
+            /*RHU HARDSTOP*/
+            for (x = 0; x < RHU_COUNT; x++){
+                LED_Set(x);
+                LED_Set(LED_TCO);
+            }
+
+            /*SYSTEM should now enter HALT mode until reset*/
+            CTL_HardSTOP(FAIL_TCO_PTC);
+	    }
 	}
-	else
-	{
-		tcos[tco_] = 0;
+}
+
+void RHU_EnableRHU(uint16_t rhu_)
+{
+    #ifdef DEBUG_RHU
+    printf("RHU_EnableRHU():: Enabling RHU %d for duty %d\n", rhu_, rhu_state[rhu_].duty );
+    #endif
+
+    if (!rhu_state[rhu_].duty){
+        #ifdef DEBUG_RHU
+        printf("RHU_EnableRHU():: RHU not enabled, nothing to do\n" );
+        #endif
+
+        return;
+    }
+
+    rhu_state[rhu_].en = 1;
+    rhu_state[rhu_].has_power = 1;
+    PWM_SetDuty( rhu_, rhu_state[rhu_].duty );
+}
+
+void RHU_DisableRHU(uint16_t rhu_)
+{
+    #ifdef DEBUG_RHU
+    printf("RHU_DisableRHU():: Disabling RHU %d\n", rhu_ );
+    #endif
+
+    rhu_state[rhu_].en = 0;
+    PWM_SetDuty( rhu_, 0 );
+}
+
+void RHU_EStopRHU(void)
+{
+    #ifdef DEBUG_RHU
+        printf("RHU_EStopRHU():: Bringing down 48V system and setting RHUs duties to 0)\n");
+    #endif
+
+	int i = 0;
+
+    RHU_Disable48V();
+
+    //all duty cycles to 0
+	for (i = 0; i < RHU_COUNT; i++){
+	    RHU_DisableRHU(i);
 	}
 }
 
-void CheckTcoResults(void)
+#define READDUTY(a_,b_) ( ExtGpioRead(a_) ? 0x02 : 0 ) +  ( ExtGpioRead(b_) ? 0x01 : 0 )
+void RHU_Init(void)
 {
-	static int i;
-	i = 0;
-	while(i < 8)
-	{
-		if(tcos[i] == 1)
-		{
-			FlagTcoError(i);
-		}
-		i++;
-	}
-}
-
-void ProcessRhuRunning(void)
-{
-	static int i;
-	i = 0;
-	while(i < RHU_QTY)
-	{
-		if((rhu_en_array & bit_arrays[i]) && !(GetRhuWatchdog(i))) 	// if RHU(i+1) is enabled
-		{
-			SetDuty((i+1), (duty_cycle_settings[i])); 				// .. turn on with requested duty cycle
-		}
-		else 														// if RHU(i+1) is disabled
-		{
-			SetDuty((i+1), 0); 										// .. set duty cycle to 0% (turn off)
-		}
-		i++;
-	}
-}
-
-void EnableRhu(uint16_t rhu_)
-{
-	rhu_en_array |= (bit_arrays[rhu_-1]);
-}
-
-void DisableRhu(uint16_t rhu_)
-{
-	rhu_en_array &= ~(bit_arrays[rhu_-1]);
-}
-
-void EstopRhu(void)
-{
-	static int i;
-	i = 0;
-
-	rhu_en_array = 0;
-	while(i < RHU_QTY)
-	{
-		SetDuty((i+1), 0);
-		i++;
-	}
-	// all duty cycles 0
-	DisableRhuRelay();
-}
-
-/*-----------------------------------------------------------------------------------------------------------
- *
- * Functions - Init
- *
- -----------------------------------------------------------------------------------------------------------*/
-
-void SetRhuDutyArray(uint16_t rhu_, uint16_t duty_)
-{
-	duty_cycle_settings[rhu_-1] = duty_;
-}
-
-void InitializeRHUs(void)
-{
-	static uint16_t temp_duty;
-	temp_duty = 0;
+	uint16_t temp_duty;
 
 	// RHU 1
-	if(ExtGpioRead(300) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(301) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_1)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[0], duties[temp_duty]);
-
+	temp_duty = READDUTY(300, 301);
+	if(USE_RHU_1)
+	    rhu_state[0].duty = DUTY_TABLE[temp_duty];
 
 	// RHU 2
-	temp_duty = 0;
-	if(ExtGpioRead(302) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(303) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_2)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[1], duties[temp_duty]);
+	temp_duty = READDUTY(302, 303);
+	if(USE_RHU_2)
+        rhu_state[1].duty = DUTY_TABLE[temp_duty];
 
 	// RHU 3
-	temp_duty = 0;
-	if(ExtGpioRead(304) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(305) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_3)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[2], duties[temp_duty]);
+	temp_duty = READDUTY(304, 305);
+	if(USE_RHU_3)
+        rhu_state[2].duty = DUTY_TABLE[temp_duty];
 
 	// RHU 4
-	temp_duty = 0;
-	if(ExtGpioRead(306) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(307) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_4)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[3], duties[temp_duty]);
+	temp_duty = READDUTY(306, 307);
+	if(USE_RHU_4)
+        rhu_state[3].duty = DUTY_TABLE[temp_duty];
 
 	// RHU 5
-	temp_duty = 0;
-	if(ExtGpioRead(400) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(401) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_5)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[4], duties[temp_duty]);
+	temp_duty = READDUTY(400, 401);
+	if(USE_RHU_5)
+        rhu_state[4].duty = DUTY_TABLE[temp_duty];
 
 	// RHU 6
-	temp_duty = 0;
-	if(ExtGpioRead(402) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(403) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_6)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[5], duties[temp_duty]);
+	temp_duty = READDUTY(402, 403);
+	if(USE_RHU_6)
+        rhu_state[5].duty = DUTY_TABLE[temp_duty];
 
-	temp_duty = 0;
-	if(ExtGpioRead(404) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(405) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_7)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[6], duties[temp_duty]);
+	//RHU 7
+	temp_duty = READDUTY(404, 405);
+	if(USE_RHU_7)
+        rhu_state[6].duty = DUTY_TABLE[temp_duty];
 
 	// RHU 8
-	temp_duty = 0;
-	if(ExtGpioRead(406) == 1)
-	{
-		temp_duty = 0x02;
-	}
-	if(ExtGpioRead(407) == 1)
-	{
-		temp_duty += 0x01;
-	}
-	if(!USE_RHU_8)
-		temp_duty = 0;
-	SetRhuDutyArray(rhus[7], duties[temp_duty]);
+	temp_duty = READDUTY(406, 407);
+	if(USE_RHU_8)
+        rhu_state[7].duty = DUTY_TABLE[temp_duty];
 }
 
 

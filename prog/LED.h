@@ -14,10 +14,9 @@
 #include "../HW/IOInit.h"
 #include "prog_conf.h"
 
-void InitLeds(void);
-void SetLed(Uint16 req_);
-void ClearLed(Uint16 req_);
-void LedWdSet(Uint16 Wd_);
-void LedWdClear(Uint16 Wd_);
+void LED_InitLeds(void);
+
+void LED_Set(Uint16 req_);
+void LED_Clear(Uint16 req_);
 
 #endif /* PROG_LED_H_ */

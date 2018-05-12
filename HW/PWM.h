@@ -16,10 +16,10 @@
 #include "DSP2803x_Device.h"     // DSP2803x Headerfile Include File
 
 #include "../prog/prog_conf.h"
-#include "../prog/adct.h"
 #include "../prog/rhu.h"
 #include "../prog/time.h"
 #include "../HW/Interface.h"
+#include "../prog/ctl.h"
 #include "DSP28x_Project.h"
 
 //===========================================================================
@@ -37,10 +37,10 @@
 // 7 = EPWM6A
 // 8 = EPWM6B
 // req_ = (duty cycle % * 10)
-void SetDuty(uint16_t channel_, uint16_t req_);
+void PWM_SetDuty(uint16_t channel_, uint16_t req_);
 // init
 void PWMISREn(void);
 void PWMISRMap(void);
 void InitEPwm(void); 									// initializes PWM peripherial with desired settings for EPWM 1, 2, 3, & 6 used by RHU1-8
-
+void PWM_EnableAnalogISR(void);                            //enables the analog ePWM isr
 #endif /* PWM_H_ */
