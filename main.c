@@ -4,8 +4,8 @@
 #include "HW/hal.h"
 #include "HW/Interface.h"
 #include "prog/prog_conf.h"
-#include "prog/adct.h"
 #include "memCopy.h"
+#include "prog/ctl.h"
 #include "prog/time.h"
 #include "prog/lcd.h"
 

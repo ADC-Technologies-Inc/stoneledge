@@ -76,7 +76,6 @@ void ProcessAnalogResult(void)
 	{
 		ProcessNtcSet(AnalogChannels.adcmux); 			// Average 12x10 samples that are ready and place into averaged PTC result array
 		ProcessCurrentSet(AnalogChannels.adcmux);  		// Process current sense info
-		printf("ProcessAnalogResult:: AnalogChannels.adcmux = %d\n", AnalogChannels.adcmux );
 		if(AnalogChannels.adcmux == 15) 				// if this is the 16th ADC MUX channel then set PTC ready
 		{
 			SetNtcReady();
@@ -87,9 +86,11 @@ void ProcessAnalogResult(void)
 			AnalogChannels.adcmux++;
 		}
 
-		SetMux(AnalogChannels.adcmux); 				// Change MUX channel
+		SetMux(AnalogChannels.adcmux); 				    // Change MUX channel - needs i2c
+
 		// wait to re-enable analog reads after mux has been incremented
 		// this will allow settling time before new reads start
+
 		//EPwm5Regs.ETSEL.bit.SOCAEN = 1; 				// Enable SOC Trig (EPWM)
 		AnalogChannels.adcresready = 0; 				// set results to not ready
 		//AnalogChannels.adcinten = 1; 					// set interrupt to enabled

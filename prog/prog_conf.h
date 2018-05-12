@@ -43,35 +43,40 @@
 #define 	FAIL_GEN_THERM 				7
 #define 	OVERHEAT 					8
 #define 	RECOVER 					9
+#define     PREINIT_FAIL_BAD_READ      10
 
 // RHUs
 
-#define 	CPU1 						1
-#define 	CPU2 						2
-#define 	MISC 						3
-#define 	RAM 						4
-#define 	DIMM_GRP 					5
-#define 	M_2_GRP 					6
-#define 	SFF_GRP 					7
-#define 	MEZZ 						8
-#define 	ADDITIONAL_SENSORS 			9
+#define 	CPU1 						0
+#define 	CPU2 					    1
+#define 	MISC 						2
+#define 	RAM 						3
+#define 	DIMM_GRP 					4
+#define 	M_2_GRP 					5
+#define 	SFF_GRP 					6
+#define 	MEZZ 						7
 
-// LEDs
+//not RHUs but used by temp.c as error returns
+#define 	ADDITIONAL_SENSORS 			8
+#define     BOARD                       8
+#define     AIR                         9
 
-#define 	LED_CPU1 					0
-#define 	LED_CPU2 					1
-#define 	LED_DIMM_GRP 				2
-#define 	LED_RAM 					3
-#define 	LED_MEZZ 					4
-#define 	LED_M_2_GRP 				5
-#define 	LED_SFF_GRP 				6
-#define 	LED_TCO 					7
-#define 	LED_ONGOING 				8
-#define 	LED_M1 						9
+// LEDs- DO NOT CHANGE ORDER, LED.c is configured for LEDs to be listed in this order
+
+#define 	LED_CPU1 					CPU1
+#define 	LED_CPU2 					CPU2
+#define 	LED_DIMM_GRP 				DIMM_GRP
+#define 	LED_RAM 					RAM
+#define 	LED_MEZZ 					MEZZ
+#define 	LED_M_2_GRP 				M_2_GRP
+#define 	LED_SFF_GRP 				SFF_GRP
+#define     LED_MISC                    MISC
+#define 	LED_TCO 					8
+#define 	LED_ONGOING 				9
 #define 	LED_TEMP 					10
-#define 	LED_MISC 					11
-#define 	LED_MGMT 					12
-#define 	LED_POWER 					13
+#define 	LED_MGMT 					11
+#define 	LED_POWER 					12
+#define     LED_M1                      13
 #define 	LED_M2 						14
 
 // duty cycle switch configs
@@ -106,9 +111,9 @@
 // Enables
 
 //#define 	USE_ETHERNET 							// uncomment to bring ethernet online (not ready)
-#define 	USE_LCD 								// uncomment to bring LCD online (not ready)
+#define 	USE_LCD 								// uncomment to bring LCD online
 #define 	BYPASS_TCO_ERROR 						// uncomment to stop triggering TCO fail errors
-//#define 	LOW_DUTY_MODE 							// uncomment to do limited testing without proper heatsinks
+#define 	LOW_DUTY_MODE 							// uncomment to do limited testing without proper heatsinks
 													// new duty cycles settings are 0, 5%, 7.5%, 10%
 
 #define 	USE_RHU_1 	0 							// set to 0 to disabled RHU

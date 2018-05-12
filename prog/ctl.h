@@ -5,8 +5,8 @@
  *      Author: Zack Lyzen
  */
 
-#ifndef PROG_ADCT_H_
-#define PROG_ADCT_H_
+#ifndef PROG_CTL_H_
+#define PROG_CTL_H_
 
 #include <stdint.h>
 
@@ -26,7 +26,8 @@
 void InitializeProgram(void);
 void StartupTest(void);
 void ControlLoop(void);
-void SetMode(void);
-Uint16 GetMode(void);
+void ControlLoop_PreInit(void);
 
-#endif /* PROG_ADCT_H_ */
+void CTL_HardSTOP( uint16_t msg_);
+
+#endif /* PROG_CTL_H_ */

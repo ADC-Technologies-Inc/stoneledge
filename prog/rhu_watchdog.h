@@ -18,7 +18,7 @@
 
 
 void FlagTcoError(Uint16 tco_);
-Uint16 CritialError(void);
+Uint16 CriticalError(void);
 Uint16 CheckFuse(void);
 void UpdateRhuWatchdog(void);
 void ServiceRhuWatchdog(void);

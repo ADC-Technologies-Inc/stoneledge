@@ -5,7 +5,7 @@
  *      Author: Zack Lyzen
  */
 
-#define DEBUG_TEMPS
+//#define DEBUG_TEMPS
 
 #ifdef DEBUG_TEMPS
 #include "ntd_debug.h"
@@ -40,9 +40,8 @@ static struct TempCell *Temps[NUM_TEMPS] = {&Cpu1, &Cpu2, &Misc, &Ram, &Dimm, &M
 
 uint32_t *AverageTempArray;
 
-uint16_t maxTempValue = 0;
-uint16_t oldMaxTempValue = 0;
-uint16_t maxTempValid = 0;
+static uint16_t max_temp = 0;
+
 
 #define C_TO_K          (double)273
 #define C_25_IN_K       (double)298
@@ -67,12 +66,8 @@ uint16_t maxTempValid = 0;
 uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_);
 
 
-uint16_t GetMaxTempData(void)
-{
-	if(maxTempValid)
-		return maxTempValue;
-	else
-		return oldMaxTempValue;
+uint16_t GetMaxTempData(void){
+   return max_temp;
 }
 
 /*rhu_ is 0-based*/
@@ -83,11 +78,12 @@ uint16_t GetTempDataSingle(uint16_t rhu_)
 
 void SetMaxTemp(void)
 {
-	static int i;
-	i = 0;
+	int i = 1;
+
 	oldMaxTempValue = maxTempValue;
 	maxTempValid = 0;
-	maxTempValue = 0;
+
+	maxTempValue =Temps[0]->max_temp;
 	while(i <  NUM_TEMPS)
 	{
 		if(Temps[i]->max_temp > maxTempValue)
@@ -104,11 +100,31 @@ void SetMaxTemp(void)
 #define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];
 #endif
 
-void ProcessTempData(void)
+/*
+ * RETURNS
+ *
+ * -1 = NOT READY
+ * 0 = TEMPS GOOD
+ * >0 OTHER, bitfield of relevant RHUs that are out of spec as defined below
+ *
+ * CPU1                        0
+ * CPU2                        1
+ * MISC                        2
+ * RAM                         3
+ * DIMM_GRP                    4
+ * M_2_GRP                     5
+ * SFF_GRP                     6
+ * MEZZ                        7
+ * BOARD                       8
+ * AIR                         9
+ *
+ * */
+int ProcessTempData(void)
 {
     /*NTD - VERIFIED 05/10/18. ALL IDX ACCURATE*/
 
-    uint16_t sc30_temp;
+    uint16_t sc30_temp, i, max_temp;
+    int err = 0;
 
 	if(GetNtcReady() == 1)
 	{
@@ -314,27 +330,34 @@ void ProcessTempData(void)
 		TESTANDSET_MAXTEMP( 9, 173 );
         Temps[9]->max_temp = CONVERTTEMP_JT(Temps[9]->max_temp_counts);
 
-		SetMaxTemp();
+        //Find the Max Overall Temperature
+        max_temp = Temps[0]->max_temp;
+        for (i =0 ;i <  NUM_TEMPS; i++){
+            if(Temps[i]->max_temp > max_temp)
+                max_temp = Temps[i]->max_temp;
+        }
+
+		//Verify all temps are within spec.
+		err = 0;
+	    for(i =0; i < RHU_COUNT; i++){
+	        if(Temps[i]->max_temp > RHU_TEMP_MAX_LIMIT){
+	            err |= ( 1 << i );
+	        }
+	    }
+	    if(Temps[8]->max_temp > BOARD_TEMP_MAX_LIMIT)
+	    {
+	        err |= ( 1 << 8 );
+	    }
+	    if(Temps[9]->max_temp > AIR_TEMP_MAX_LIMIT)
+	    {
+	        err |= ( 1 << 9 );
+	    }
+
+		return err;
+	}else{
+	    return 0;
 	}
 }
-
-/*uint16_t ConvertTemp(uint16_t counts_)
-{
-	tempNum = RES_DIV*(double)(4096 - counts_);
-	tempNum /= (double)4096;
-	tempDen = (double)(4096 - counts_)/(double)4096;
-	tempDen = (double)1 - tempDen;
-	R = tempNum / tempDen; 					// measured resistance value of NTC
-	tempNum = B; 							// numerator is only Beta
-	exp_holder = (-1 * B) / C_25_IN_K; 		// exponent of exponential portion of r_inf
-	exp_holder = exp(exp_holder); 			// raises e to 'exp_holder'
-	r_inf = RES_DIV * exp_holder; 			// r_inf used to calculate temp
-	tempDen = log(R / r_inf); 				// used natural log to calculate the denominator of temp calc
-	T = tempNum / tempDen; 					// temp in K
-	T -= C_TO_K; 							// converts to C
-	T *= 10; 								// converts to C * 10
-	return (uint16_t)T; 					// returns at uint16_t
-}*/
 
 //Thermistor temperature converter
 uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
@@ -356,32 +379,6 @@ uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
     T -= C_TO_K;                            // converts to C
     T *= 10;                                // converts to C * 10
     return (uint16_t) T;                     // returns at uint16_t
-}
-
-void EvaluateTempData(void)
-{
-	static int i;
-	i = 0;
-	while(i < NUM_TEMPS - 2)
-	{
-	    //moved this to ProcessTempData to allow closer control of the type of thermistor being converted
-		//Temps[i]->max_temp = CONVERTTEMP_JT(Temps[i]->max_temp_counts); 		// convert measurement from counts to temp
-
-		if(Temps[i]->max_temp > RHU_TEMP_MAX_LIMIT) 				//
-		{
-			SetRhuWatchdog(i);
-		}
-		i++;
-	}
-	if(Temps[8]->max_temp > BOARD_TEMP_MAX_LIMIT)
-	{
-		//
-	}
-	if(Temps[9]->max_temp > AIR_TEMP_MAX_LIMIT)
-	{
-		//
-	}
-
 }
 
 void InitTemp(void)

@@ -23,24 +23,31 @@
 // Defines
 //===========================================================================
 
-#define 	RHU_QTY 			8
-#define 	RHU_RELAY_STATE 	GetRhuRelayState()
+#define 	RHU_COUNT 			8
 
 //===========================================================================
-// Function Prototypes
+// External Facing Functions
 //===========================================================================
-// running
-void EnableRhuRelay(void);
-void DisableRhuRelay(void);
-Uint16 GetRhuRelayState(void);
-void CheckTco(Uint16 tco_, Uint16 duty_cycle_);
-void CheckTcoResults(void);
-void ProcessRhuRunning(void); 							// checks each rhu to see if enabled/disabled, sets duty accordingly
-void EnableRhu(uint16_t rhu_); 							// enables the specified rhu - changes take effect next time "ProcessRhuRunning" is called
-void DisableRhu(uint16_t rhu_); 						// disables the specified rhu - changes take effect next time "ProcessRhuRunning" is called
-void EstopRhu(void); 									// immediately sets all duty cycles to 0% and disables all Rhus
-// init
-void SetRhuDutyArray(uint16_t rhu_, uint16_t duty_); 	// sets the "on" duty cycle for specified RHu
-void InitializeRHUs(void); 								//
+
+//Initializer, call before any of the other funcs
+void RHU_Init(void);
+
+//Callback from ePWM1 ISR, do not call
+void RHU_PWMCallback( void );
+
+//48V System
+void RHU_Enable48V(void);
+void RHU_Disable48V(void);
+Uint16 RHU_Get48VFuse(void);
+
+//Verify RHUs are powered on and operating as intended, if an enabled RHU is down this will halt the system.
+void RHU_VerifyRHU(void);
+
+//Enable/Disable RHUs
+void RHU_EnableRHU(uint16_t rhu_);
+void RHU_DisableRHU(uint16_t rhu_);
+
+//Emergency Stop, brings down 48V and all RHUs
+void RHU_EStopRHU(void);
 
 #endif /* PROG_RHU_H_ */

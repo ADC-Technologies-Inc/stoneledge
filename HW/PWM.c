@@ -43,9 +43,9 @@ static uint16_t pwm_1_count = 0;
  *
  -----------------------------------------------------------------------------------------------------------*/
 
-void SetDuty(uint16_t channel_, uint16_t req_)
+void PWM_SetDuty(uint16_t channel_, uint16_t req_)
 {
-	*duty_cycle_registers[channel_-1] = req_;
+	*duty_cycle_registers[channel_] = req_;
 }
 
 /*-----------------------------------------------------------------------------------------------------------
@@ -211,7 +211,7 @@ void InitEPwm()
    /////////////////////////////////
    //	ePWM4
    /////////////////////////////////
-   EPwm4Regs.TBPRD 					= 16741;				// Period = 1000 ms
+   EPwm4Regs.TBPRD 					= 523;//16741;				// Period = 1000 ms
    	   	   	   	   	   	   	   	   	   	   	   	   	   	    // with 60MHz clock and 1/(128*14) prescale this should set the PWM to 1 s
    EPwm4Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm4Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -239,51 +239,72 @@ void InitEPwm()
  * ISRs
  *
  -----------------------------------------------------------------------------------------------------------*/
+
+//Highest priority group 3 vector
 __interrupt void  EPwm1_timer_isr(void)
 {
-#ifndef BYPASS_TCO_ERROR
-	CheckTco(pwm_1_count, *duty_cycle_registers[pwm_1_count]);
-#endif /* BYPASS_TCO_ERROR*/
-	pwm_1_count++;
-	if(pwm_1_count >= RHU_MAX)
-		pwm_1_count = 0;
+    //ENABLE i2c and ePWM4 interrupts while in this one (group 8)
+
+    uint16_t TempPIEIER3;
+    TempPIEIER3 = PieCtrlRegs.PIEIER3.all;      // .. 3
+    IER |= M_INT3;                              // re-enable group 3 PIE (ePWM5)
+    IER |= M_INT8;                              // re-enable group 8 PIE (i2C)
+
+    PieCtrlRegs.PIEIER3.all = 0x0000;           // disable all but ePWM5
+    PieCtrlRegs.PIEIER3.bit.INTx5 = 0x01;       // ePWM5 interrupt enabled ....
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;     // ack this group to allow more group 3 ints to fire
+
+
+    asm(" NOP");                                // wait one cycle
+    EINT;                                       // re-enable global interrupts
+
+    /*Callback runs here*/
+    RHU_PWMCallback();
 
 	// Clear INT flag for this timer
 	EPwm1Regs.ETCLR.bit.INT = 1;
-	// Acknowledge this interrupt to receive more interrupts from group 3
-	PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+
+	// Acknowledge this interrupt to receive more interrupts from group 3 (redundant)
+	//PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+
+    DINT;
+    PieCtrlRegs.PIEIER3.all = TempPIEIER3;
 }
 
+//disabled until this is called
+void PWM_EnableAnalogISR(void){
+    EPwm4Regs.ETSEL.bit.INTEN   = 0x01;
+}
+
+/*timer for processing analog data*/
 __interrupt void  EPwm4_timer_isr(void)
 {
+    static uint16_t toggle = 0;
+
 	////
 	// 	changes to PIEIER1 and PIEIER8 cannot happen inside this ISR (group 3) so changes to them are commented out
 	////
-	//GpioDataRegs.GPASET.bit.GPIO1 = 1;
 	uint16_t TempPIEIER3;
 	TempPIEIER3 = PieCtrlRegs.PIEIER3.all; 		// .. 3
-	IER = M_INT1; 								// re-enable group 1 PIE
-	IER |= M_INT3; 								// re-enable group 3 PIE
-	IER |= M_INT8; 								// re-enable group 8 PIE
-	PieCtrlRegs.PIEIER3.all = 0x0000; 			// ePWM1 interrupt enabled ....
-	PieCtrlRegs.PIEIER3.bit.INTx5 = 0x01; 		// ePWM5 interrupt enabled ....
-
-
+	IER = M_INT1; 								// re-enable group 1 PIE (?)
+	IER |= M_INT3; 								// re-enable group 3 PIE (ePWM1 and ePWM5)
+	IER |= M_INT8; 								// re-enable group 8 PIE (i2C)
+	PieCtrlRegs.PIEIER3.all = 0x0000; 			// all group 3 except as requried disabled
+	PieCtrlRegs.PIEIER3.bit.INTx1 = 0x01;       // ePWM1 interrupt enabled (TCO verify)
+	PieCtrlRegs.PIEIER3.bit.INTx5 = 0x01; 		// ePWM5 interrupt enabled (ms counter)
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;     // let loose
 
 	asm(" NOP"); 								// wait one cycle
 	EINT; 										// re-enable global interrupts
-	PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
 
 	////
 	// 	start normal interrupt code
-	////
 
-	ControlLoop();
 
 	// Clear INT flag for this timer
 	EPwm4Regs.ETCLR.bit.INT = 1;
 	// Acknowledge this interrupt to receive more interrupts from group 3
-	//PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+	//PieCtrlRegs.PIEACK.all = PIEACK_GROUP3; (redundant)
 
 	////
 	// 	end normal interrupt code
