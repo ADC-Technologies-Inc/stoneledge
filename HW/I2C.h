@@ -10,15 +10,11 @@
 
 #include <stdint.h>
 
-#include "DSP28x_Project.h"
-#include "../prog/time.h"
+void I2C_Tx(uint16_t * buf_, uint16_t count_, uint16_t addr_);
+void I2C_Rx(uint16_t * buf, uint16_t count, uint16_t loc, uint16_t addr_);
 
-void  CheckI2CHold(void);
-void i2c_tx(uint16_t * buf_, uint16_t count_, uint16_t addr_);
-void i2c_rx(uint16_t * buf, uint16_t count, uint16_t loc, uint16_t addr_);
-
-void I2cIsrInit(void);
-void I2cIsrEn(void);
-void I2cInit(void);
+void I2C_ISRInit(void);
+void I2C_ISREn(void);
+void I2C_Init(void);
 
 #endif /* HW_I2C_H_ */

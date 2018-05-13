@@ -39,8 +39,8 @@
 // req_ = (duty cycle % * 10)
 void PWM_SetDuty(uint16_t channel_, uint16_t req_);
 // init
-void PWMISREn(void);
-void PWMISRMap(void);
-void InitEPwm(void); 									// initializes PWM peripherial with desired settings for EPWM 1, 2, 3, & 6 used by RHU1-8
+void PWM_EnISR(void);
+void PWM_MapISR(void);
+void PWM_Init(void); 									// initializes PWM peripherial with desired settings for EPWM 1, 2, 3, & 6 used by RHU1-8
 void PWM_EnableAnalogISR(void);                            //enables the analog ePWM isr
 #endif /* PWM_H_ */

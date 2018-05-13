@@ -43,7 +43,10 @@
 #define 	FAIL_GEN_THERM 				7
 #define 	OVERHEAT 					8
 #define 	RECOVER 					9
-#define     PREINIT_FAIL_BAD_READ      10
+#define     PREINIT_FAIL_BAD_READ       10
+#define     INIT_BAD_48V                11
+#define     FAIL_OVERHEAT_RHU_NOT_ON    12
+#define     FAIL_RAMP                   13
 
 // RHUs
 
@@ -142,12 +145,24 @@
 ////////////////////////////////////////
 
 #define 	AIR_TEMP_MAX_LIMIT 			700 		// temp value (c * 10) before error is thrown
-#define 	BOARD_TEMP_MAX_LIMIT 		700			//
-#define 	RHU_TEMP_MAX_LIMIT 			700 		//
+#define 	BOARD_TEMP_MAX_LIMIT 		700			// Board temp limit
+#define     RHU1_TEMP_MAX_LIMIT         700         // CPU1
+#define     RHU2_TEMP_MAX_LIMIT         700         // CPU2
+#define 	RHU_TEMP_MAX_LIMIT 			700         // All other RHUs
+
 
 #define 	PTC_DAMAGED_THRESHOLD_L 	80 			// raw ADC value that indicates a damaged permanent PTC
 #define 	PTC_DAMAGED_THRESHOLD_U 	4000 		// raw ADC value that indicates a damaged permanent PTC
 #define 	PTC_MISSING_THRESHOLD_L 	80 			// raw ADC value that indicates a missing removable PTC
 #define 	PTC_MISSING_THRESHOLD_U 	4000 		// raw ADC value that indicates a missing removable PTC
+
+////////////////////////////////////////
+//  RHU RAMP
+////////////////////////////////////////
+
+#define     MIN_DUTY_TOCHECK_CYCLE      50
+#define     RAMP_DELAY_CPU              10000
+#define     RAMP_DELAY                  5000
+#define     RHU_WATCHDOG_DELAY              30000       //turn off each RHU for a minimum of 30s
 
 #endif /* PROG_PROG_CONF_H_ */

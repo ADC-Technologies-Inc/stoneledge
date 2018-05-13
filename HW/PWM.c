@@ -20,13 +20,13 @@
 // ISR Prototypes
 //===========================================================================
 
-__interrupt void EPwm1_timer_isr(void);
-__interrupt void EPwm4_timer_isr(void);
-__interrupt void EPwm5_timer_isr(void);
+__interrupt void PWM_ePWM1_ISR__dutycycle(void);
+__interrupt void PWM_ePWM4_ISR__analog(void);
+__interrupt void PWM_ePWM5_ISR__tickcount(void);
 
-#pragma CODE_SECTION(EPwm1_timer_isr, "ramfuncs");
-#pragma CODE_SECTION(EPwm4_timer_isr, "ramfuncs");
-#pragma CODE_SECTION(EPwm5_timer_isr, "ramfuncs");
+#pragma CODE_SECTION(PWM_ePWM1_ISR__dutycycle, "ramfuncs");
+#pragma CODE_SECTION(PWM_ePWM4_ISR__analog, "ramfuncs");
+#pragma CODE_SECTION(PWM_ePWM5_ISR__tickcount, "ramfuncs");
 
 
 //===========================================================================
@@ -34,8 +34,7 @@ __interrupt void EPwm5_timer_isr(void);
 //===========================================================================
 #define 	RHU_MAX 	8
 
-static volatile Uint16 *duty_cycle_registers[8]; 						// array of pointers to the duty cycle registers, for ease of use
-static uint16_t pwm_1_count = 0;
+static volatile Uint16 *PWM_DutyRegs[8]; 						// array of pointers to the duty cycle registers, for ease of use
 
 /*-----------------------------------------------------------------------------------------------------------
  *
@@ -43,9 +42,11 @@ static uint16_t pwm_1_count = 0;
  *
  -----------------------------------------------------------------------------------------------------------*/
 
-void PWM_SetDuty(uint16_t channel_, uint16_t req_)
+/*set_duty = duty% * 100. */
+/*TODO, CHECK THIS*/
+void PWM_SetDuty(uint16_t channel_, uint16_t set_duty_)
 {
-	*duty_cycle_registers[channel_] = req_;
+	*PWM_DutyRegs[channel_] = set_duty_;
 }
 
 /*-----------------------------------------------------------------------------------------------------------
@@ -54,7 +55,7 @@ void PWM_SetDuty(uint16_t channel_, uint16_t req_)
  *
  -----------------------------------------------------------------------------------------------------------*/
 
-void PWMISREn(void)
+void PWM_EnISR(void)
 {
     IER |= M_INT3;
 
@@ -63,25 +64,25 @@ void PWMISREn(void)
     PieCtrlRegs.PIEIER3.bit.INTx5 = 0x01;
 }
 
-void PWMISRMap(void)
+void PWM_MapISR(void)
 {
 	EALLOW;
-	PieVectTable.EPWM1_INT = &EPwm1_timer_isr;
-    PieVectTable.EPWM4_INT = &EPwm4_timer_isr;
-    PieVectTable.EPWM5_INT = &EPwm5_timer_isr;
+	PieVectTable.EPWM1_INT = &PWM_ePWM1_ISR__dutycycle;
+    PieVectTable.EPWM4_INT = &PWM_ePWM4_ISR__analog;
+    PieVectTable.EPWM5_INT = &PWM_ePWM5_ISR__tickcount;
     EDIS;
 }
 
-void InitEPwm()
+void PWM_Init()
 {
-	duty_cycle_registers[0] = &EPwm1Regs.CMPA.half.CMPA;
-	duty_cycle_registers[1] = &EPwm1Regs.CMPB;
-	duty_cycle_registers[2] = &EPwm2Regs.CMPA.half.CMPA;
-	duty_cycle_registers[3] = &EPwm2Regs.CMPB;
-	duty_cycle_registers[4] = &EPwm3Regs.CMPA.half.CMPA;
-	duty_cycle_registers[5] = &EPwm3Regs.CMPB;
-	duty_cycle_registers[6] = &EPwm6Regs.CMPA.half.CMPA;
-	duty_cycle_registers[7] = &EPwm6Regs.CMPB;
+	PWM_DutyRegs[0] = &EPwm1Regs.CMPA.half.CMPA;
+	PWM_DutyRegs[1] = &EPwm1Regs.CMPB;
+	PWM_DutyRegs[2] = &EPwm2Regs.CMPA.half.CMPA;
+	PWM_DutyRegs[3] = &EPwm2Regs.CMPB;
+	PWM_DutyRegs[4] = &EPwm3Regs.CMPA.half.CMPA;
+	PWM_DutyRegs[5] = &EPwm3Regs.CMPB;
+	PWM_DutyRegs[6] = &EPwm6Regs.CMPA.half.CMPA;
+	PWM_DutyRegs[7] = &EPwm6Regs.CMPB;
 
    /////////////////////////////////
    //	ePWM1
@@ -211,7 +212,7 @@ void InitEPwm()
    /////////////////////////////////
    //	ePWM4
    /////////////////////////////////
-   EPwm4Regs.TBPRD 					= 523;//16741;				// Period = 1000 ms
+   EPwm4Regs.TBPRD 					= 83;//16741;		    // Period = 5ms
    	   	   	   	   	   	   	   	   	   	   	   	   	   	    // with 60MHz clock and 1/(128*14) prescale this should set the PWM to 1 s
    EPwm4Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm4Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -240,10 +241,10 @@ void InitEPwm()
  *
  -----------------------------------------------------------------------------------------------------------*/
 
-//Highest priority group 3 vector
-__interrupt void  EPwm1_timer_isr(void)
+//Highest priority group 3 vector, called when the duty cycle starts- measure if RHUs are on here
+__interrupt void  PWM_ePWM1_ISR__dutycycle(void)
 {
-    //ENABLE i2c and ePWM4 interrupts while in this one (group 8)
+    //ENABLE i2c and ePWM5 interrupts while in this one (group 8, 3)
 
     uint16_t TempPIEIER3;
     TempPIEIER3 = PieCtrlRegs.PIEIER3.all;      // .. 3
@@ -277,9 +278,9 @@ void PWM_EnableAnalogISR(void){
 }
 
 /*timer for processing analog data*/
-__interrupt void  EPwm4_timer_isr(void)
+__interrupt void  PWM_ePWM4_ISR__analog(void)
 {
-    static uint16_t toggle = 0;
+    static uint16_t event = 0;
 
 	////
 	// 	changes to PIEIER1 and PIEIER8 cannot happen inside this ISR (group 3) so changes to them are commented out
@@ -290,7 +291,7 @@ __interrupt void  EPwm4_timer_isr(void)
 	IER |= M_INT3; 								// re-enable group 3 PIE (ePWM1 and ePWM5)
 	IER |= M_INT8; 								// re-enable group 8 PIE (i2C)
 	PieCtrlRegs.PIEIER3.all = 0x0000; 			// all group 3 except as requried disabled
-	PieCtrlRegs.PIEIER3.bit.INTx1 = 0x01;       // ePWM1 interrupt enabled (TCO verify)
+	PieCtrlRegs.PIEIER3.bit.INTx1 = 0x01;       // ePWM1 interrupt enabled (TCO verify) //we enable ePWM1 to allow the best chance of picking up accurate TCO bits, there is a slight possibility that it may have an issue though
 	PieCtrlRegs.PIEIER3.bit.INTx5 = 0x01; 		// ePWM5 interrupt enabled (ms counter)
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;     // let loose
 
@@ -300,11 +301,16 @@ __interrupt void  EPwm4_timer_isr(void)
 	////
 	// 	start normal interrupt code
 
+	switch(event){
+	case 0: { StartAnalog(); event++; break; }              //Start data collection in present channel (should take 10ms)
+    case 3: { event++; ProcessAnalogResult(); break; }      //process result and switch channel
+	case 4: { event = 0; break; }                           //Wait to allow channel to settle
+	default: event++;
+	}
+
 
 	// Clear INT flag for this timer
 	EPwm4Regs.ETCLR.bit.INT = 1;
-	// Acknowledge this interrupt to receive more interrupts from group 3
-	//PieCtrlRegs.PIEACK.all = PIEACK_GROUP3; (redundant)
 
 	////
 	// 	end normal interrupt code
@@ -315,11 +321,15 @@ __interrupt void  EPwm4_timer_isr(void)
 	//GpioDataRegs.GPACLEAR.bit.GPIO1 = 1;
 }
 
-__interrupt void  EPwm5_timer_isr(void)
+__interrupt void  PWM_ePWM5_ISR__tickcount(void)
 {
 	//GpioDataRegs.GPASET.bit.GPIO0 = 1;
 	// EPWM5 takes care of the time (in ms) as well as the analog reads (1KHz)
-	increment_time_ms();
+
+    //no point incurring the call overhead to increment a single var that should be atomic anyway.
+	//increment_time_ms();
+    time_ms++;
+
 	// Clear INT flag for this timer
 	EPwm5Regs.ETCLR.bit.INT = 1;
 	// Acknowledge this interrupt to receive more interrupts from group 3

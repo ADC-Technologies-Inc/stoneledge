@@ -22,19 +22,5 @@ int main(void)
 			(unsigned int *) &RamfuncsRunStart);
 
 	InitializeHardware(); 					// initializes clocks, gpio, and peripherials to safe states
-	InitializeProgram(); 					// initializes program variables and other program-specific functions
-
-	while (1)
-	{
-
-#ifdef USE_LCD 								// if use LCD is selected
-			LcdService(); 					// checks LCD to see if display needs to be updated
-#endif /* USE_LCD */
-#ifdef USE_ETHERNET 						// if use Ethernet is selected
-			ServiceEthernet(); 				// service ethernet every 1ms - though sends every 500ms
-#endif /* USE_ETHERNET*/
-
-		Pause(); 						// while loop shall take 1ms if 1ms hasn't been completed yet (timer starts at beginning of while loop)
-										// then wait here for timer to complete
-	}
+	CTL_Enter(); 					// initializes program variables and other program-specific functions
 }

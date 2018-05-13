@@ -86,7 +86,7 @@ void ProcessAnalogResult(void)
 			AnalogChannels.adcmux++;
 		}
 
-		SetMux(AnalogChannels.adcmux); 				    // Change MUX channel - needs i2c
+		MUX_Set(AnalogChannels.adcmux); 				    // Change MUX channel - needs i2c
 
 		// wait to re-enable analog reads after mux has been incremented
 		// this will allow settling time before new reads start

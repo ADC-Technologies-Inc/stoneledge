@@ -5,7 +5,7 @@
  *      Author: Zack Lyzen
  */
 
-#define DEBUG_RHU
+#define DEBUG_RHU 1
 
 #include "../prog/rhu.h"
 
@@ -19,6 +19,11 @@ struct rhu_state__{
     uint16_t    en;
     uint16_t    has_power;
     uint16_t    duty;
+    uint16_t    ramp;
+    uint16_t    ramp_inc;
+    uint16_t    watchdog;
+    uint32_t    wd_last_overtemp;
+    uint32_t    wd_lastramp;
 };
 
 //===========================================================================
@@ -27,11 +32,16 @@ struct rhu_state__{
 
 #ifdef LOW_DUTY_MODE
 const static uint16_t DUTY_TABLE[4] = {0, 50, 75, 100};
+const static uint16_t RAMP_TABLE[4] = {0, 10, 15, 20 };
 #else
-const static uint16_t DUTY_TABLE[4] = {0, 500, 75, 1000};
+const static uint16_t DUTY_TABLE[4] = {0, 500, 750, 1000};
+const static uint16_t RAMP_TABLE[4] = {0, 100, 150, 200 };
 #endif
 
-static struct rhu_state__ rhu_state[RHU_COUNT] = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
+static struct rhu_state__ rhu_state[RHU_COUNT] = {{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
+
+//Counter, increment for each RHU added to watchdog, decrement when removed
+static uint16_t wd_active = 0;
 
 /*-----------------------------------------------------------------------------------------------------------
  *
@@ -73,6 +83,9 @@ Uint16 RHU_Get48VFuse(void){
 void RHU_PWMCallback( void ){
     uint16_t toggle = 0;
     uint16_t gpio_set;
+
+    /*TODO*/
+    //WE MAY MAKE THIS REQUIRE 3 CONSECUTIVE FAILS TO CONSTITUTE A FAIL
 
     /*
      * Poll RHU power status sets and save data for next control loop read, we do one at a time to minimize i2c traffic while the duty cycle is running
@@ -117,30 +130,34 @@ void RHU_PWMCallback( void ){
     }
 }
 
-void RHU_VerifyRHU(void)
+void RHU_VerifyRHU(uint16_t fail_msg_)
 {
-#ifdef DEBUG_RHU
-    printf("RHU_VerifyRHU():: Go through TCO status and check for errors\n" );
-#endif
+    uint16_t flag_hardstop = 0;
 
-	int i = 0, x;
+    #ifdef DEBUG_RHU
+    printf("RHU_VerifyRHU():: Go through TCO status and check for errors\n" );
+    #endif
+
+	int i = 0;
 
 	while(i < RHU_COUNT){
 	    //nb. we turn on has_power when we enable to ensure we don't get caught out by ControlLoop calling this before RHU_PWMCallback() has had a chance to be called
-	    if (rhu_state[i].duty && rhu_state[i].en && !rhu_state[i].has_power ) {
+	    ASSERT( (rhu_state[i].en) ? rhu_state[i].duty : 1 );
+
+	    if (rhu_state[i].en && !rhu_state[i].has_power ) {
             #ifdef DEBUG_RHU
             printf("RHU_VerifyRHU():: Flagging error on TCO %d\n", i );
             #endif
 
-            /*RHU HARDSTOP*/
-            for (x = 0; x < RHU_COUNT; x++){
-                LED_Set(x);
-                LED_Set(LED_TCO);
-            }
-
-            /*SYSTEM should now enter HALT mode until reset*/
-            CTL_HardSTOP(FAIL_TCO_PTC);
+            //HardSTOP, turn on LED and continue around in case there are multiple errors
+            LED_Set(i);
+            flag_hardstop = 1;
 	    }
+	}
+
+	if (flag_hardstop){
+        LED_Set(LED_TCO);
+	    CTL_HardSTOP(fail_msg_);
 	}
 }
 
@@ -160,7 +177,72 @@ void RHU_EnableRHU(uint16_t rhu_)
 
     rhu_state[rhu_].en = 1;
     rhu_state[rhu_].has_power = 1;
+    rhu_state[rhu_].ramp = rhu_state[rhu_].duty;
     PWM_SetDuty( rhu_, rhu_state[rhu_].duty );
+}
+
+/*Repeatedly called, slowly ramps up the RHU to full power
+ *
+ * RHU_FULLPOWER               //RHU is complete, don't call again (please k thx)
+ * RHU_ABORT                   //Error of some form, presently unused
+ * RHU_DISABLED_BY_SWITCH      //Duty switch is off
+ * RHU_DISABLED                //Disabled in software
+ *
+ */
+int RHU_EnableRHU_RAMP(uint16_t rhu_){
+    ASSERT( rhu_ < RHU_COUNT );
+
+    //Check if RHU is software disabled
+    #if USE_RHU_1 == 0
+    if (rhu_ == 0) return RHU_DISABLED;
+    #endif
+    #if USE_RHU_2 == 0
+    if (rhu_ == 1) return RHU_DISABLED;
+    #endif
+    #if USE_RHU_3 == 0
+    if (rhu_ == 2) return RHU_DISABLED;
+    #endif
+    #if USE_RHU_4 == 0
+    if (rhu_ == 3) return RHU_DISABLED;
+    #endif
+    #if USE_RHU_5 == 0
+    if (rhu_ == 4) return RHU_DISABLED;
+    #endif
+    #if USE_RHU_6 == 0
+    if (rhu_ == 5) return RHU_DISABLED;
+    #endif
+    #if USE_RHU_7 == 0
+    if (rhu_ == 6) return RHU_DISABLED;
+    #endif
+    #if USE_RHU_8 == 0
+    if (rhu_ == 7) return RHU_DISABLED;
+    #endif
+
+    //Check if RHU is switch disabled
+    if ( rhu_state[rhu_].duty == 0 ) return RHU_DISABLED_BY_SWITCH;
+
+    //Check that if the RHU is showing enabled that the ramp is correct
+    ASSERT( (rhu_state[rhu_].en) ? rhu_state[rhu_].ramp : !rhu_state[rhu_].ramp );
+
+    //Check if we've been called while already at full power or if ramp > duty, shouldn't happen
+    ASSERT(rhu_state[rhu_].ramp <= rhu_state[rhu_].duty);
+
+    if (!rhu_state[rhu_].en){
+        rhu_state[rhu_].en = 1;
+        rhu_state[rhu_].has_power = 1;
+    }
+
+    //Set next ramp
+    rhu_state[rhu_].ramp += rhu_state[rhu_].ramp_inc;
+    if (rhu_state[rhu_].ramp > rhu_state[rhu_].duty) rhu_state[rhu_].ramp = rhu_state[rhu_].duty;
+
+    //Set duty
+    PWM_SetDuty( rhu_, rhu_state[rhu_].ramp );
+
+    //Are we now at full power?
+    if (rhu_state[rhu_].ramp == rhu_state[rhu_].duty) return RHU_FULLPOWER;
+
+    return rhu_state[rhu_].ramp;
 }
 
 void RHU_DisableRHU(uint16_t rhu_)
@@ -170,6 +252,8 @@ void RHU_DisableRHU(uint16_t rhu_)
     #endif
 
     rhu_state[rhu_].en = 0;
+    rhu_state[rhu_].ramp = 0;
+    rhu_state[rhu_].has_power = 0;
     PWM_SetDuty( rhu_, 0 );
 }
 
@@ -190,49 +274,185 @@ void RHU_EStopRHU(void)
 }
 
 #define READDUTY(a_,b_) ( ExtGpioRead(a_) ? 0x02 : 0 ) +  ( ExtGpioRead(b_) ? 0x01 : 0 )
+
+#define SETDUTY(a_,b_, c_) temp_duty = READDUTY(a_, b_);\
+        rhu_state[c].duty = DUTY_TABLE[temp_duty];\
+        rhu_state[c].ramp_inc = RAMP_TABLE[temp_duty];\
+
 void RHU_Init(void)
 {
 	uint16_t temp_duty;
 
 	// RHU 1
-	temp_duty = READDUTY(300, 301);
-	if(USE_RHU_1)
-	    rhu_state[0].duty = DUTY_TABLE[temp_duty];
+    #if USE_RHU_1
+	SETDUTY(300, 301, 0)
+    #endif
 
 	// RHU 2
-	temp_duty = READDUTY(302, 303);
-	if(USE_RHU_2)
-        rhu_state[1].duty = DUTY_TABLE[temp_duty];
+    #if USE_RHU_2
+	SETDUTY(302, 303, 1)
+    #endif
 
 	// RHU 3
-	temp_duty = READDUTY(304, 305);
-	if(USE_RHU_3)
-        rhu_state[2].duty = DUTY_TABLE[temp_duty];
+    #if USE_RHU_3
+    SETDUTY(304, 305, 2)
+    #endif
 
 	// RHU 4
-	temp_duty = READDUTY(306, 307);
-	if(USE_RHU_4)
-        rhu_state[3].duty = DUTY_TABLE[temp_duty];
+    #if USE_RHU_4
+    SETDUTY(306, 307, 3)
+    #endif
 
-	// RHU 5
-	temp_duty = READDUTY(400, 401);
-	if(USE_RHU_5)
-        rhu_state[4].duty = DUTY_TABLE[temp_duty];
+    // RHU 5
+    #if USE_RHU_5
+    SETDUTY(400, 401, 4)
+    #endif
 
-	// RHU 6
-	temp_duty = READDUTY(402, 403);
-	if(USE_RHU_6)
-        rhu_state[5].duty = DUTY_TABLE[temp_duty];
+    // RHU 6
+    #if USE_RHU_6
+    SETDUTY(402, 403, 5)
+    #endif
 
-	//RHU 7
-	temp_duty = READDUTY(404, 405);
-	if(USE_RHU_7)
-        rhu_state[6].duty = DUTY_TABLE[temp_duty];
+    // RHU 7
+    #if USE_RHU_7
+    SETDUTY(404, 405, 6)
+    #endif
 
-	// RHU 8
-	temp_duty = READDUTY(406, 407);
-	if(USE_RHU_8)
-        rhu_state[7].duty = DUTY_TABLE[temp_duty];
+    // RHU 8
+    #if USE_RHU_8
+    SETDUTY(406, 407, 7)
+    #endif
 }
 
+void RHU_Watchdog_FAIL(uint16_t rhu_){
+    //Add to watchdog.
+    ASSERT( rhu_ < RHU_COUNT );
+
+    //Update time.
+    rhu_state[rhu_].wd_last_overtemp = time_ms;
+
+    //check if rhu is already under the watchdogs management, if it is get out
+    if ( rhu_state[rhu_].watchdog ) return;
+
+    //not in watchdog
+    #ifdef DEBUG_RHU
+    printf("RHU_Watchdog_FAIL():: RHU %d taken offline by watchdog\n", rhu_ );
+    #endif
+
+
+    //Since we're being called related to a thermal issue if there is no power applied to this RHU it's not this RHU that's the problem- it's pretty severe though so hardstop
+    if ( !rhu_state[rhu_].en ){
+
+         //not enabled, the problem isn't going to be solved by turning off this RHU, a neighbor might be too hot?
+        LED_Set(rhu_);
+        CTL_HardSTOP(FAIL_OVERHEAT_RHU_NOT_ON);
+    }
+
+    //Shutdown the RHU and mark it for watchdog service
+    RHU_DisableRHU(rhu_);
+    ASSERT(rhu_state[rhu_].ramp == 0 && rhu_state[rhu_].en == 0);
+
+    rhu_state[rhu_].watchdog = 1;
+    wd_active++;
+    LED_Set(rhu_);
+
+    ASSERT( wd_active > 0 && wd_active < RHU_COUNT );
+
+    //was this the first watchdog?
+    if (wd_active == 1){
+        LED_Set(LED_ONGOING);
+        LcdPostStatic(OVERHEAT);
+    }
+}
+
+
+/*GOT HERE*/
+void RHU_Watchdog_Service(){
+    int ret;
+    uint16_t i, temp, overheat = 0;
+    uint32_t ms_since_last;
+
+#ifdef DEBUG
+    //DEBUG, verify nothing is active while the counter is 0
+    if (!wd_active){
+        for (i = 0; i < RHU_COUNT; i++){
+            ASSERT(rhu_state[i].watchdog == 0);
+        }
+    }
+#elif
+    if (!wd_active) return; //nothing to do
+#endif
+
+    for (i=0; i< RHU_COUNT; i++){
+        if (rhu_state[i].watchdog ){
+
+            //Get RHU temperature and check if it's valid
+            temp = GetTempDataSingle(i);
+            switch(i){
+            case CPU1: { overheat = (temp > RHU1_TEMP_MAX_LIMIT); break; }
+            case CPU2: { overheat = (temp > RHU2_TEMP_MAX_LIMIT); break; }
+            default: { overheat = (temp > RHU_TEMP_MAX_LIMIT); break; }
+            }
+
+            if ( rhu_state[i].en ){
+                //RHU is being ramped up again, check if the temperature has exceeded safety limits
+                if (overheat){
+                    //turn it off again and reset event timer
+                    rhu_state[i].wd_last_overtemp = time_ms;
+                    RHU_DisableRHU(i);
+                    continue;
+                }
+
+                //Temps are still ok, has enough time passed since the last ramp?
+                ms_since_last = time_ms - rhu_state[i].wd_lastramp;
+                if (ms_since_last < ((i < 2) ? RAMP_DELAY_CPU : RAMP_DELAY) ) continue;     //nothing to do for this RHU
+
+                //Continue out to ramp up...
+            }else{
+                //Check if enough time has passed since overheat condition to turn on the RHU again
+                ms_since_last = time_ms - rhu_state[i].wd_last_overtemp;
+                if (ms_since_last < RHU_WATCHDOG_DELAY ) continue;    //nothing to do for this RHU on this iteration
+
+                //Continue out to ramp up...
+            }
+
+            //Ramp up
+            ret = RHU_EnableRHU_RAMP(i);
+            switch(ret){
+            case RHU_FULLPOWER:{
+                    //Ramp complete, remove from watchdog and treat it like a normal RHU again
+                    rhu_state[i].wd_lastramp = 0;
+                    rhu_state[i].wd_last_overtemp = 0;
+                    rhu_state[i].watchdog = 0;
+                    wd_active--;
+                    LED_Clear(i);
+                }
+            case RHU_ABORT:{
+                    //Abort. Danger Will Robinson, Abort Abort.
+                    CTL_HardSTOP(FAIL_RAMP); //hardstop will never return
+                    break;
+                }
+#ifdef RHU_DEBUG
+            case RHU_DISABLED_BY_SWITCH:
+            case RHU_DISABLED:{
+                    //this is an error, shouldn't happen
+                    printf("RHU_Watchdog_Service():: BUG - Disabled RHU being in watchdog\n");
+                    break;
+                }
+#endif
+            default:{
+                    //Set lastramp to now
+                    rhu_state[i].wd_lastramp = time_ms;
+                }
+            }
+        }
+    }
+
+    //Check if the watchdog is finished (reset indicator and push recovery LCD message)
+    if ( wd_active ) return;
+
+    //Clear error message
+    LED_Clear(LED_ONGOING);
+    LcdPostModal(RECOVER);
+}
 
