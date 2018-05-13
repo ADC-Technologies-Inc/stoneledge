@@ -22,7 +22,7 @@ struct LED_Pins_ {
     uint16_t state;             //pin state (on/off)
 }; 
 
-struct LED_Pins_ LED_Pins[15];// = {0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0};
+struct LED_Pins_ LED_Pins[15] = {{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
 
 //static Uint16 LED_Pins_ByName[15];
 //static Uint16 LED_Pins_ByRHU[9];

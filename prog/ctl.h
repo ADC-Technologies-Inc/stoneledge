@@ -22,8 +22,13 @@
 #include "../HW/IOInit.h"
 #include "ntc.h"
 
+extern int online;  //set when entering online mode, allows ePWM4 to operate
+
 //Entry call
 void CTL_Enter(void);
+
+//Callback from ePWM4 for priority online control code
+void CTL_OnlineCALLBACK(void);
 
 //System Wide HardSTOP, call this to bring the system to a stop after doing any specific module related tasks
 void CTL_HardSTOP( uint16_t msg_);
