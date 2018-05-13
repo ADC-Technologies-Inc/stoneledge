@@ -16,7 +16,9 @@
         in_ & 0x01\
 
 #ifdef DEBUG
-#define ASSERT( x_ ) if (!x_) printf("ASSERT FAILED "__FILE__" line: %d\n", __LINE__ );
+#define ASSERT_(x_) if ( (!x_) ) printf("ASSERT FAILED "__FILE__" line: %d\n", __LINE__ );
+#define ASSERT( x_ ) ASSERT_( (x_) )
+
 #elif
 #define ASSERT( x_ )
 #endif

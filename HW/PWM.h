@@ -20,6 +20,7 @@
 #include "../prog/time.h"
 #include "../HW/Interface.h"
 #include "../prog/ctl.h"
+#include "../prog/lcd.h"        // LCD is serviced by ePWM4
 #include "DSP28x_Project.h"
 
 //===========================================================================

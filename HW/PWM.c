@@ -277,10 +277,11 @@ void PWM_EnableAnalogISR(void){
     EPwm4Regs.ETSEL.bit.INTEN   = 0x01;
 }
 
-/*timer for processing analog data*/
+/*timer for processing analog data and servicing LCD*/
 __interrupt void  PWM_ePWM4_ISR__analog(void)
 {
     static uint16_t event = 0;
+    static uint16_t service = 0;
 
 	////
 	// 	changes to PIEIER1 and PIEIER8 cannot happen inside this ISR (group 3) so changes to them are commented out
@@ -308,6 +309,13 @@ __interrupt void  PWM_ePWM4_ISR__analog(void)
 	default: event++;
 	}
 
+	//Presently set to 5ms, service LCD every 500ms
+	if (service++ == 100){
+	    if (online) CTL_OnlineCALLBACK();
+
+        LcdService();
+        service = 0;
+	}
 
 	// Clear INT flag for this timer
 	EPwm4Regs.ETCLR.bit.INT = 1;

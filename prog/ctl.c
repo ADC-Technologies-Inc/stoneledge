@@ -66,40 +66,78 @@
 
 #define CTL_DEBUG
 
+//Global vars.
+int online = 0;
+
 //Internal funcs.
 static void CTL_PreInit(void);
 static void CTL_Init(void);
-static void CTL_Online(void);
+static void CTL_OnlineBGTasks(void);
 
 /*Enter the main program loop*/
 void CTL_Enter(void){
     uint16_t i;
 
     //Make sure 48V system is off
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Turning off 48v sub-system\n" );
+    #endif
+
 	RHU_Disable48V();
 
     //Reset ext GPIOs
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Initializing External GPIO\n" );
+    #endif
+
     ExtGpioInit();
 
     //Read Duty Configs and make sure all RHUs are in disabled position
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Initializing RHU code and disabling RHU\n" );
+    #endif
+
     RHU_Init();
 	for (i=0;i<RHU_COUNT;i++){
 	    RHU_DisableRHU(i);
 	}
 
 	//Put some info on the screen
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Initializing LCD\n" );
+    #endif
+
     LcdInit();
     LcdPostStatic(PRE_STARTUP);
+    LcdService();
 
     //Do our sweep and initialize LEDs
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Doing LED sweep\n" );
+    #endif
+
     LED_InitLeds();
 
     //Pickup SystemID
     InitSysId();
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Initializing SysID to "PRINTF_BINSTR8"\n", PRINTF_BINSTR8_ARGS( GetSysId() ) );
+    #endif
 
 	//Initialize the analog sections
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Initializing Analog PTC code\n" );
+    #endif
 	InitNtc(); 								// initialize analog/ptc section
+
+    #ifdef CTL_DEBUG
+	printf("CTL_Enter():: Initializing current code\n" );
+    #endif
 	InitCurrent(); 							// initialize analog/current sense section
+
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Initializing ADC Mux code\n" );
+    #endif
 	MUX_Init(); 								// initializes ADC MUX
 
 #ifdef USE_ETHERNET
@@ -108,6 +146,10 @@ void CTL_Enter(void){
 
 
 	//Enter Control Loop
+    #ifdef CTL_DEBUG
+    printf("CTL_Enter():: Entering PreInit phase\n" );
+    #endif
+
 	CTL_PreInit();
 }
 
@@ -119,11 +161,17 @@ void CTL_PreInit(void){
     uint16_t retry = 0, delayed = 0, i;
 
     //Start collecting sensor data
+    #ifdef CTL_DEBUG
+    printf("CTL_PreInit():: Enabling Analog ISRs (ePWM4)\n" );
+    #endif
+
     PWM_EnableAnalogISR();
 
 re_enter:
     //entry_time = get_time_ms();
-
+    #ifdef CTL_DEBUG
+    printf("CTL_PreInit():: Pausing for 5 seconds while temps are collected\n" );
+    #endif
     delay_ms(5000);
 
 /*    while( (get_time_ms() - entry_time) > 5000 ){
@@ -142,7 +190,22 @@ re_enter:
     //five seconds has passed, check if all thermistors are within limit
     ret = ProcessTempData();
     #ifdef CTL_DEBUG
-    printf("CTL_PreInit():: Processed Temp Data returned %d\n", ret );
+    switch(ret){
+    case -1: {printf("CTL_PreInit():: Processing Temp Data returned NOT_READY\n" ); break;}
+    case 0: {printf("CTL_PreInit():: Processing Temp Data returned TEMPS_OK\n" ); break;}
+    default:{
+            if (ret & 0x1) printf("CTL_PreInit():: Processing Temp Data returned CPU1 overheat\n" );
+            if (ret & 0x2) printf("CTL_PreInit():: Processing Temp Data returned CPU2 overheat\n" );
+            if (ret & 0x4) printf("CTL_PreInit():: Processing Temp Data returned MISC overheat\n" );
+            if (ret & 0x8) printf("CTL_PreInit():: Processing Temp Data returned RAM overheat\n" );
+            if (ret & 0x10) printf("CTL_PreInit():: Processing Temp Data returned DIMM_GRP overheat\n" );
+            if (ret & 0x20) printf("CTL_PreInit():: Processing Temp Data returned M_2_GRP overheat\n" );
+            if (ret & 0x40) printf("CTL_PreInit():: Processing Temp Data returned SFF_GRP overheat\n" );
+            if (ret & 0x80) printf("CTL_PreInit():: Processing Temp Data returned MEZZ overheat\n" );
+            if (ret & 0x100) printf("CTL_PreInit():: Processing Temp Data returned BOARD overheat\n" );
+            if (ret & 0x200) printf("CTL_PreInit():: Processing Temp Data returned AIR overheat\n" );
+        }
+    }
     #endif
 
     if (ret < 0 ){
@@ -169,11 +232,15 @@ re_enter:
         //PRE INIT - Over Temperature condition, re-enter until it comes within spec.
         delayed = ret;
 
+        #ifdef CTL_DEBUG
+        printf("CTL_PreInit():: Posting DELAY_STARTUP_FAIL_THERM and setting LED_ONGOING\n" );
+        #endif
         LcdPostStatic( DELAY_STARTUP_FAIL_THERM );  //post message to LCD
+        LcdService();
         LED_Set(LED_ONGOING);                       //set ongoing LED
 
         //Set necessary RHU LEDs
-        for (i = 0; i < 8; i++ ){
+        for (i = 0; i < RHU_COUNT; i++ ){
             if ( ret & 0x1 ) LED_Set(i);
             ret = ret >> 1;
 
@@ -199,6 +266,9 @@ re_enter:
         LED_Clear(LED_TEMP);
     }
 
+    #ifdef CTL_DEBUG
+    printf("CTL_PreInit():: Entering Init Phase\n" );
+    #endif
     CTL_Init();
 }
 
@@ -206,9 +276,24 @@ re_enter:
 void CTL_Init(void){
     int rhu = 0, ramp_ret = 0, ret, i;
 
+
+    #ifdef CTL_DEBUG
+    printf("CTL_Init():: Posting STARTUP Message\n" );
+    #endif
     LcdPostStatic( STARTUP );
+    LcdService();
 
     /*We need to power on the relay and the RHUs, relay first*/
+    #ifdef CTL_DEBUG
+        if ( RHU_Get48VFuse() ) {
+            printf("CTL_Init():: Testing 48v FUSE while off indicated that it was on!\n" );
+        }
+    #endif
+
+
+    #ifdef CTL_DEBUG
+    printf("CTL_Init():: Enabling 48v system\n" );
+    #endif
     RHU_Enable48V();
     delay_ms(10);
 
@@ -222,34 +307,90 @@ void CTL_Init(void){
     }
 
     /*Bring up the RHUs - we do this slowly, ramping up to the full duty-cycle over a several minutes to avoid potential inrush current issues*/
+    #ifdef CTL_DEBUG
+    printf("CTL_Init():: Entering RHU Ramp Upm\n" );
+    #endif
+
     for ( rhu = 0; rhu < RHU_COUNT; ){
 
         /*bring up the RHUs in order*/
+        #ifdef CTL_DEBUG
+        printf("CTL_Init():: Enabling 48v system\n" );
+        #endif
+
         ramp_ret = RHU_EnableRHU_RAMP(rhu);
         switch(ramp_ret){
-        case RHU_FULLPOWER: { rhu++; break; }
+        case RHU_FULLPOWER: {
+            #ifdef CTL_DEBUG
+            printf("CTL_Init():: RHU %d at Full Power, moving on\n", rhu );
+            #endif
+            rhu++;
+            break;
+        }
         case RHU_ABORT: {
             /*Fail on an RHU of some form, this will probably never be returned but it's an abort anyway*/
+            #ifdef CTL_DEBUG
+            printf("CTL_Init():: RHU %d ABORT\n", rhu );
+            #endif
+
             LED_Set(rhu);
             CTL_HardSTOP(FAIL_RAMP); //hardstop will never return
         }
         case RHU_DISABLED_BY_SWITCH:
-        case RHU_DISABLED:
+        case RHU_DISABLED:{
+            #ifdef CTL_DEBUG
+            printf("CTL_Init():: RHU %d disabled, moving on\n", rhu );
+            #endif
+
             rhu++;
+            continue;   //re-enter, nothing to be done for this RHU
+            }
         default:
             //RHU ok, we should have the present duty_cycle in ramp_ret
+            #ifdef CTL_DEBUG
+            printf("CTL_Init():: RHU %d Ramp OK, present duty = %d\n", rhu, ramp_ret );
+            #endif
+
             ASSERT( ramp_ret >= 0 );
         }
 
         if ( ramp_ret > MIN_DUTY_TOCHECK_CYCLE ){
             //Check the RHU is powered, this will halt if there's an issue
+            #ifdef CTL_DEBUG
+            printf("CTL_Init():: Checking TCO/PTC\n");
+            #endif
+
             RHU_VerifyRHU(INIT_FAIL_TCO_PTC);
         }
 
         //delay before re-entering ramp
+        #ifdef CTL_DEBUG
+        printf("CTL_Init():: Delaying %d ms until next ramp\n", (rhu > 1 ? RAMP_DELAY : RAMP_DELAY_CPU) );
+        #endif
+
+        /*delay and service LCD*/
         delay_ms( rhu > 1 ? RAMP_DELAY : RAMP_DELAY_CPU );
 
         ret = ProcessTempData();
+        #ifdef CTL_DEBUG
+        switch(ret){
+        case -1: {printf("CTL_Init():: Processing Temp Data returned NOT_READY\n" ); break;}
+        case 0: {printf("CTL_Init():: Processing Temp Data returned TEMPS_OK\n" ); break;}
+        default:{
+                if (ret & 0x1) printf("CTL_Init():: Processing Temp Data returned CPU1 overheat\n" );
+                if (ret & 0x2) printf("CTL_Init():: Processing Temp Data returned CPU2 overheat\n" );
+                if (ret & 0x4) printf("CTL_Init():: Processing Temp Data returned MISC overheat\n" );
+                if (ret & 0x8) printf("CTL_Init():: Processing Temp Data returned RAM overheat\n" );
+                if (ret & 0x10) printf("CTL_Init():: Processing Temp Data returned DIMM_GRP overheat\n" );
+                if (ret & 0x20) printf("CTL_Init():: Processing Temp Data returned M_2_GRP overheat\n" );
+                if (ret & 0x40) printf("CTL_Init():: Processing Temp Data returned SFF_GRP overheat\n" );
+                if (ret & 0x80) printf("CTL_Init():: Processing Temp Data returned MEZZ overheat\n" );
+                if (ret & 0x100) printf("CTL_Init():: Processing Temp Data returned BOARD overheat\n" );
+                if (ret & 0x200) printf("CTL_Init():: Processing Temp Data returned AIR overheat\n" );
+            }
+        }
+        #endif
+
         if (ret > 0){
             //Overtemp, call HardSTOP (aka. there's something wrong that isn't minor; this isn't your normal overheat if it happened almost immediately!)
             //Set necessary RHU LEDs
@@ -279,78 +420,98 @@ void CTL_Init(void){
     #endif
 
     //Illuminate the celebratory LED
+    #ifdef CTL_DEBUG
+    printf("CTL_Init():: Posting INIT_OK Message and turning on Management Light\n" );
+    #endif
     LED_Set(LED_MGMT);
     LcdPostModal(INIT_OK);
 
-    CTL_Online();
+
+    #ifdef CTL_DEBUG
+    printf("CTL_Init():: Entering Online Phase\n" );
+    #endif
+    online = 1;
+
+    //The main cpu task handles the background tasks, such as Ethernet service
+    CTL_OnlineBGTasks();
 }
 
-//Entering online mode, pretty simple- run at 2hz and do stuff.
-#define LOOP_TIME     500
-void CTL_Online(){
-    uint32_t last_entry, time_to_fin;
+void CTL_OnlineBGTasks(){
+    while(1){
+        //service Ethernet here, placeholder for now.
+        delay_ms(65535);
+    }
+}
+
+//Online mode callback from ePWM4
+void CTL_OnlineCALLBACK(){
     uint16_t i;
     int ret;
 
-    while (1)
-    {
-        last_entry = time_ms;
+    //Check the RHUs are powered, this will halt if there's an issue
+    #ifdef CTL_DEBUG
+    printf("CTL_OnlineCALLBACK():: Checking TCO/PTC\n");
+    #endif
+    RHU_VerifyRHU(FAIL_TCO_PTC);
 
-        //Check the RHUs are powered, this will halt if there's an issue
-        RHU_VerifyRHU(FAIL_TCO_PTC);
+    //Check temps
+    ret = ProcessTempData();
+    #ifdef CTL_DEBUG
+    switch(ret){
+    case -1: {printf("CTL_OnlineCALLBACK():: Processing Temp Data returned NOT_READY\n" ); break;}
+    case 0: {printf("CTL_OnlineCALLBACK():: Processing Temp Data returned TEMPS_OK\n" ); break;}
+    default:{
+            if (ret & 0x1) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned CPU1 overheat\n" );
+            if (ret & 0x2) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned CPU2 overheat\n" );
+            if (ret & 0x4) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned MISC overheat\n" );
+            if (ret & 0x8) printf("CTL_Online():: Processing Temp Data returned RAM overheat\n" );
+            if (ret & 0x10) printf("CTL_Online():: Processing Temp Data returned DIMM_GRP overheat\n" );
+            if (ret & 0x20) printf("CTL_Online():: Processing Temp Data returned M_2_GRP overheat\n" );
+            if (ret & 0x40) printf("CTL_Online():: Processing Temp Data returned SFF_GRP overheat\n" );
+            if (ret & 0x80) printf("CTL_Online():: Processing Temp Data returned MEZZ overheat\n" );
+            if (ret & 0x100) printf("CTL_Online():: Processing Temp Data returned BOARD overheat\n" );
+            if (ret & 0x200) printf("CTL_Online():: Processing Temp Data returned AIR overheat\n" );
+        }
+    }
+    #endif
 
-        //Check temps
-        ret = ProcessTempData();
-        if (ret > 0){
+    if (ret > 0){
 
-            //Over temperature condition in an RHU or on board
-            for (i = 0; i < 8; i++ ){
-                if ( ret & 0x1 ) LED_Set(i);
-                ret = ret >> 1;
+        //Over temperature condition in an RHU or on board
+        for (i = 0; i < RHU_COUNT; i++ ){
+            if ( ret & 0x1 ) LED_Set(i);
+            ret = ret >> 1;
 
-                #ifdef CTL_DEBUG
-                printf("CTL_Online():: Over temperature error on RHU %d, reporting to watchdog\n", i );
-                #endif
+            #ifdef CTL_DEBUG
+            printf("CTL_Online():: Over temperature error on RHU %d, reporting to watchdog\n", i );
+            #endif
 
-                RHU_Watchdog_FAIL(i);
-            }
-
-            if ( ret ){
-                //Watchdog can't help, the problem is elsewhere - shutdown.
-                #ifdef CTL_DEBUG
-                printf("CTL_Online():: Over temperature error on board or air, bringing down system\n" );
-                #endif
-
-                LED_Set(LED_TEMP);
-                CTL_HardSTOP(FAIL_GEN_THERM);
-            }
+            RHU_Watchdog_FAIL(i);
         }
 
+        if ( ret ){
+            //Watchdog can't help, the problem is elsewhere - shutdown.
+            #ifdef CTL_DEBUG
+            printf("CTL_OnlineCALLBACK():: Over temperature error on board or air, bringing down system\n" );
+            #endif
 
-        #ifdef USE_ETHERNET                         // if use Ethernet is selected
-        ServiceEthernet();              // service ethernet every 1ms - though sends every 500ms
-        #endif
-
-        //Service Watchdog
-        RHU_Watchdog_Service();
-
-        //Service LCD
-        LcdService();
-
-        //Hold for next loop
-        time_to_fin = time_ms - last_entry;
-        if ( time_to_fin >= LOOP_TIME ) continue;
-
-        delay_ms(time_to_fin-LOOP_TIME);
+            LED_Set(LED_TEMP);
+            CTL_HardSTOP(FAIL_GEN_THERM);
+        }
     }
 
-
+    //Service Watchdog
+    #ifdef CTL_DEBUG
+    printf("CTL_Online():: Checking TCO/PTC\n");
+    #endif
+    RHU_Watchdog_Service();
 }
 
 /*HARDSTOP*/
 void CTL_HardSTOP( uint16_t msg_){
     RHU_EStopRHU();                         //bring down 48v subsystem
     LcdPostStatic( msg_ );                  //post message to LCD
+    LcdService();
     LED_Set(LED_ONGOING);                   //set ongoing LED
 
     //Disable interrupts
@@ -365,5 +526,5 @@ void CTL_HardSTOP( uint16_t msg_){
     __asm(" IDLE");
 
     //in case it didn't work
-    while(1) asm(" NOP");
+    while(1) delay_ms(65535);
 }

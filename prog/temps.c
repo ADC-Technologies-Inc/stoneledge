@@ -91,16 +91,16 @@ uint16_t GetTempDataSingle(uint16_t rhu_)
  * 0 = TEMPS GOOD
  * >0 OTHER, bitfield of relevant RHUs that are out of spec as defined below
  *
- * CPU1                        0
- * CPU2                        1
- * MISC                        2
- * RAM                         3
- * DIMM_GRP                    4
- * M_2_GRP                     5
- * SFF_GRP                     6
- * MEZZ                        7
- * BOARD                       8
- * AIR                         9
+ * CPU1                        0x1
+ * CPU2                        0x2
+ * MISC                        0x4
+ * RAM                         0x8
+ * DIMM_GRP                    0x10
+ * M_2_GRP                     0x20
+ * SFF_GRP                     0x40
+ * MEZZ                        0x80
+ * BOARD                       0x100
+ * AIR                         0x200
  *
  * */
 int ProcessTempData(void)

@@ -140,7 +140,7 @@ void RHU_VerifyRHU(uint16_t fail_msg_)
 
 	int i = 0;
 
-	while(i < RHU_COUNT){
+	for(i=0; i < RHU_COUNT; i++){
 	    //nb. we turn on has_power when we enable to ensure we don't get caught out by ControlLoop calling this before RHU_PWMCallback() has had a chance to be called
 	    ASSERT( (rhu_state[i].en) ? rhu_state[i].duty : 1 );
 
@@ -378,6 +378,7 @@ void RHU_Watchdog_Service(){
         for (i = 0; i < RHU_COUNT; i++){
             ASSERT(rhu_state[i].watchdog == 0);
         }
+        return;
     }
 #elif
     if (!wd_active) return; //nothing to do

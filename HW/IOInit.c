@@ -251,9 +251,9 @@ void InitGpio_start(void)
 	   GpioCtrlRegs.GPADIR.bit.GPIO24 = 0;   // GPIO24 = input
 
 	   //
-	   GpioCtrlRegs.GPAPUD.bit.GPIO25 = 1;
-	   GpioCtrlRegs.GPAMUX2.bit.GPIO25 = 0;
-	   GpioCtrlRegs.GPADIR.bit.GPIO25 = 0;
+	   GpioCtrlRegs.GPAPUD.bit.GPIO25 = 1;   // Enable pullup on GPIO25
+	   GpioCtrlRegs.GPAMUX2.bit.GPIO25 = 0;  // GPIO25 = GPIO25
+	   GpioCtrlRegs.GPADIR.bit.GPIO25 = 0;   // GPIO25 = input
 
 	   //
 	   GpioCtrlRegs.GPAPUD.bit.GPIO26 = 1;

@@ -121,18 +121,17 @@ void I2C_Tx(uint16_t *buf_, uint16_t count_, uint16_t addr_)
 
 re_enter:
 
-    DINT;       //disable group 3 interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
+    DINT;                           //disable interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
 
     ASSERT( !tx_flag && !rx_flag);  //neither of these should be possible as i2c has the highest priority due to the MUX
 	while(I2caRegs.I2CSTR.bit.BB ); //Wait for bus and device to be available
 
 	//Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
-	if (!tempIER && IER & 0x03){
-	    tempIER = 0x03;
-	    IER &= 0xFFFB;          //disable group 3 register
+	if (!tempIER && IER & 0x04){    //check if the setting has already been saved first and then if INT3 is set
+	    tempIER = 0x04;             //save INT3 setting
+	    IER &= 0xFFFB;              //disable group 3 register
 	}
-
-	EINT;                       //re-enable interrupts
+	EINT;                           //re-enable interrupts*/
 
 	tx_flag = 1;
 	fail_flag = 0;
@@ -172,12 +171,9 @@ re_enter:
     }
 
 exit_:
-    DINT;
     //Restore register
-    if (tempIER){
-        IER |= 0x03;
-        IER &= 0x03;
-    }
+    DINT;
+    IER |= tempIER;
     EINT;
 
 	//printf("i2c_tx():: I exited!\n");
@@ -197,13 +193,12 @@ re_enter:
     ASSERT( !tx_flag && !rx_flag);
     while(I2caRegs.I2CSTR.bit.BB  ); //Wait for bus and device to be available
 
-    //Save Group 3 status
-    if (!tempIER && IER & 0x03){
-        tempIER = 0x03;
-        IER &= 0xFFFB;          //disable group 3 register
+    //Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
+    if (!tempIER && IER & 0x04){    //check if the setting has already been saved first and then if INT3 is set
+        tempIER = 0x04;             //save INT3 setting
+        IER &= 0xFFFB;              //disable group 3 register
     }
-
-    EINT;
+    EINT;                           //re-enable interrupts*/
 
 	rx_flag = 1;
 	fail_flag = 0;
@@ -246,11 +241,7 @@ re_enter:
     }
 exit_:
     DINT;
-    //Restore register
-    if (tempIER){
-        IER |= 0x03;
-        IER &= 0x03;
-    }
+    IER |= tempIER;
     EINT;
 
     //printf("i2c_tx():: I exited too!\n");

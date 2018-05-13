@@ -8,7 +8,7 @@
 #include "mux.h"
 #include "../HW/IOInit.h"
 
-#define MUX_DEBUG
+//#define MUX_DEBUG
 
 #ifdef MUX_DEBUG
 #include "ntd_debug.h"
