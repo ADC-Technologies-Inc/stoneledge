@@ -2,8 +2,6 @@
 #define DEBUG
 #endif
 
-#ifdef DEBUG
-
 #include "stdio.h"
 
 #define PRINTF_BINSTR8 "%d%d%d%d%d%d%d%d"
@@ -17,4 +15,9 @@
         (in_ & 0x02)>>1,\
         in_ & 0x01\
 
+#ifdef DEBUG
+#define ASSERT( x_ ) if (!x_) printf("ASSERT FAILED "__FILE__" line: %d\n", __LINE__ );
+#elif
+#define ASSERT( x_ )
 #endif
+

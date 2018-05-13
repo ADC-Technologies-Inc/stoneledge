@@ -76,22 +76,6 @@ uint16_t GetTempDataSingle(uint16_t rhu_)
 	return Temps[rhu_]->max_temp;
 }
 
-void SetMaxTemp(void)
-{
-	int i = 1;
-
-	oldMaxTempValue = maxTempValue;
-	maxTempValid = 0;
-
-	maxTempValue =Temps[0]->max_temp;
-	while(i <  NUM_TEMPS)
-	{
-		if(Temps[i]->max_temp > maxTempValue)
-			maxTempValue = Temps[i]->max_temp;
-		i++;
-	}
-	maxTempValid = 1;
-}
 
 #ifdef DEBUG_TEMPS
 #define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];\
@@ -123,7 +107,7 @@ int ProcessTempData(void)
 {
     /*NTD - VERIFIED 05/10/18. ALL IDX ACCURATE*/
 
-    uint16_t sc30_temp, i, max_temp;
+    uint16_t sc30_temp, i;
     int err = 0;
 
 	if(GetNtcReady() == 1)
@@ -339,15 +323,30 @@ int ProcessTempData(void)
 
 		//Verify all temps are within spec.
 		err = 0;
-	    for(i =0; i < RHU_COUNT; i++){
+        if(Temps[0]->max_temp > RHU1_TEMP_MAX_LIMIT)
+        {
+            err |= 0x1;
+        }
+
+        if(Temps[1]->max_temp > RHU2_TEMP_MAX_LIMIT)
+        {
+            err |= 0x2;
+        }
+
+        //Remaining RHUs
+	    for(i =2; i < RHU_COUNT; i++){
 	        if(Temps[i]->max_temp > RHU_TEMP_MAX_LIMIT){
 	            err |= ( 1 << i );
 	        }
 	    }
+
+	    //Board
 	    if(Temps[8]->max_temp > BOARD_TEMP_MAX_LIMIT)
 	    {
 	        err |= ( 1 << 8 );
 	    }
+
+	    //Air
 	    if(Temps[9]->max_temp > AIR_TEMP_MAX_LIMIT)
 	    {
 	        err |= ( 1 << 9 );

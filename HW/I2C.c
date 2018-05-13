@@ -5,8 +5,11 @@
  *      Author: zackl
  */
 #include "../HW/I2C.h"
-#include "../prog/ntd_debug.h"
 
+#define I2C_DEBUG
+
+#include "../prog/ntd_debug.h"
+#include "DSP28x_Project.h"
 #include "DSP2803x_Examples.h"
 
 
@@ -24,40 +27,40 @@
 #define I2CMDR_FDF      0x0008
 
 
-__interrupt void i2c_int1a_isr(void);
-uint16_t rx_flag = 0;
-uint16_t tx_flag = 0;
-uint16_t fail_flag = 0;
+__interrupt void I2C_ISR(void);
+static uint16_t rx_flag = 0;
+static uint16_t tx_flag = 0;
+static uint16_t fail_flag = 0;
 
-uint16_t rxinc = 0;
-uint16_t txinc = 0;
+static uint16_t rxinc = 0;
+static uint16_t txinc = 0;
 
-uint16_t rxready = 0;
-uint16_t rx_count = 0;
+static uint16_t rxready = 0;
+static uint16_t rx_count = 0;
 
-uint16_t txready = 0;
-uint16_t tx_count = 0;
+static uint16_t txready = 0;
+static uint16_t tx_count = 0;
 
-uint16_t * rx;
-uint16_t * tx;
+static uint16_t * rx;
+static uint16_t * tx;
 
 
-void I2cIsrInit(void)
+void I2C_ISRInit(void)
 {
     EALLOW;
-    PieVectTable.I2CINT1A = &i2c_int1a_isr;
+    PieVectTable.I2CINT1A = &I2C_ISR;
     EDIS;
     return;
 }
 
-void I2cIsrEn(void)
+void I2C_ISREn(void)
 {
     PieCtrlRegs.PIEIER8.bit.INTx1 = 1;
     IER |= M_INT8;
     return;
 }
 
-void I2cInit(void)
+void I2C_Init(void)
 {
    // Initialize I2C
 
@@ -110,7 +113,7 @@ void I2cInit(void)
    return;
 }
 
-void i2c_tx(uint16_t *buf_, uint16_t count_, uint16_t addr_)
+void I2C_Tx(uint16_t *buf_, uint16_t count_, uint16_t addr_)
 {
 //    printf("i2c_tx():: count= %d; addr_= %d\n", count_, addr_);
     int retry = 0;
@@ -120,7 +123,8 @@ re_enter:
 
     DINT;       //disable group 3 interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
 
-	while(I2caRegs.I2CSTR.bit.BB || tx_flag || rx_flag ); //Wait for bus and device to be available
+    ASSERT( !tx_flag && !rx_flag);  //neither of these should be possible as i2c has the highest priority due to the MUX
+	while(I2caRegs.I2CSTR.bit.BB ); //Wait for bus and device to be available
 
 	//Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
 	if (!tempIER && IER & 0x03){
@@ -158,7 +162,9 @@ re_enter:
 
     if ( fail_flag ){
         if (retry==3){
-            printf("i2c_tx():: Too many retries!\n");
+            #ifdef I2C_DEBUG
+            printf("I2C_Tx():: Too many retries\n");
+            #endif
             goto exit_;
         }
         retry++;
@@ -178,7 +184,7 @@ exit_:
 	return;
 }
 
-void i2c_rx(uint16_t * buf, uint16_t count, uint16_t loc, uint16_t addr_)
+void I2C_Rx(uint16_t * buf, uint16_t count, uint16_t loc, uint16_t addr_)
 {
     //printf("i2c_rx():: count= %d; addr_= %d\n", count, addr_);
     int retry = 0;
@@ -188,7 +194,8 @@ re_enter:
 
     DINT;       //disable group 3 interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
 
-    while(I2caRegs.I2CSTR.bit.BB || tx_flag || rx_flag ); //Wait for bus and device to be available
+    ASSERT( !tx_flag && !rx_flag);
+    while(I2caRegs.I2CSTR.bit.BB  ); //Wait for bus and device to be available
 
     //Save Group 3 status
     if (!tempIER && IER & 0x03){
@@ -228,7 +235,10 @@ re_enter:
 
     if ( fail_flag ){
         if (retry==3){
-            printf("i2c_rx():: Too many retries!\n");
+            #ifdef I2C_DEBUG
+            printf("I2C_Rx():: Too many retries\n");
+            #endif
+
             goto exit_;
         }
         retry++;
@@ -247,7 +257,7 @@ exit_:
     return;
 }
 
-__interrupt void i2c_int1a_isr(void)     // I2C-A
+__interrupt void I2C_ISR(void)     // I2C-A
 {
    Uint16 IntSource;
 
@@ -302,7 +312,9 @@ __interrupt void i2c_int1a_isr(void)     // I2C-A
            if (rx_flag) rx_flag = 0;
            if (tx_flag) tx_flag = 0;
 
-           printf("NACK\n");
+           #ifdef I2C_DEBUG
+           printf("I2C_ISR():: NACK\n");
+           #endif
 
            break;
    }

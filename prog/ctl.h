@@ -12,7 +12,6 @@
 
 #include "prog_conf.h"
 #include "rhu.h"
-#include "rhu_watchdog.h"
 #include "LED.h"
 #include "lcd.h"
 #include "mux.h"
@@ -23,11 +22,10 @@
 #include "../HW/IOInit.h"
 #include "ntc.h"
 
-void InitializeProgram(void);
-void StartupTest(void);
-void ControlLoop(void);
-void ControlLoop_PreInit(void);
+//Entry call
+void CTL_Enter(void);
 
+//System Wide HardSTOP, call this to bring the system to a stop after doing any specific module related tasks
 void CTL_HardSTOP( uint16_t msg_);
 
 #endif /* PROG_CTL_H_ */

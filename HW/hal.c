@@ -287,9 +287,9 @@ void InitializeHardware(void)
 {
 	InitSysCtrl();
 
-	InitEPwm();
+	PWM_Init();
 	InitGpio_start();
-	I2cInit();
+	I2C_Init();
 
 	DINT;
 	InitPieCtrl();
@@ -301,8 +301,8 @@ void InitializeHardware(void)
 
 	ADCISRMap();							// maps ADC ISR to Analog.c file
 	SPIIsrMap(); 							// maps SPI ISR to SPI.c file
-	I2cIsrInit(); 							// maps I2C ISR to I2C.c file
-	PWMISRMap();
+	I2C_ISRInit(); 							// maps I2C ISR to I2C.c file
+	PWM_MapISR();                            // maps PWM ISR
 
     InitAdc();  							// Init the ADC
     InitAdcAio(); 							//
@@ -311,8 +311,8 @@ void InitializeHardware(void)
 
     ADCISREn();
     SPIIsrEn();
-    I2cIsrEn();
-    PWMISREn();
+    I2C_ISREn();
+    PWM_EnISR();
 
 	InitializeRealTimeClocks();
 

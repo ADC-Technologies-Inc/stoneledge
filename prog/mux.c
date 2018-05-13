@@ -35,7 +35,7 @@ void MUX_Set(uint16_t channel_)
 	if (currentMux & 0x1) gpio_bits |= 0x80;    //turn on last bit
 
     #ifdef MUX_DEBUG
-	printf("MUX_Set():: Setting MUX to channel %d, writing bits: "PRINTF_BINSTR8"\n", PRINTF_BINSTR8_ARGS(gpio_bits) );
+	printf("MUX_Set():: Setting MUX to channel %d, writing bits: "PRINTF_BINSTR8"\n", channel_,PRINTF_BINSTR8_ARGS(gpio_bits) );
     #endif
 
 	GpioSetDirArray(5,gpio_bits);

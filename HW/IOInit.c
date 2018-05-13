@@ -377,8 +377,8 @@ void ExtGpioInit(void)
 		//Set port configuration
 		ext_gpio_buffer[0] = CMD_CONFIG; 							// command 0x03 in place buffer[0] is configuration input/output read/write
 		ext_gpio_buffer[1] = ext_gpio_dir[i]; 				// data of which pins are inputs/outputs
-		i2c_tx(ext_gpio_buffer, 2, ext_gpio_addr);  		// sends pin high/low data
-		i2c_rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr); 	// checks to see if values are correct
+		I2C_Tx(ext_gpio_buffer, 2, ext_gpio_addr);  		// sends pin high/low data
+		I2C_Rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr); 	// checks to see if values are correct
 		if(ext_gpio_buffer[1] != ext_gpio_rx_buffer[0]) 	// error handling for bad i2c write
 		{
 			// call error function for bad i2c write to PCA9557 chip
@@ -386,8 +386,8 @@ void ExtGpioInit(void)
 
 		ext_gpio_buffer[0] = CMD_INVERT; 							// command 0x02 in place buffer[0] is polarity inversion for input pin state data
 		ext_gpio_buffer[1] = GPIO_EXT_INIT_POL_INV; 		// data of which pins are inverted (none)
-		i2c_tx(ext_gpio_buffer, 2, ext_gpio_addr); 			// sends polarity inversion data
-		i2c_rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr); 	// checks to see if values are correct
+		I2C_Tx(ext_gpio_buffer, 2, ext_gpio_addr); 			// sends polarity inversion data
+		I2C_Rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr); 	// checks to see if values are correct
 		if(ext_gpio_buffer[1] != ext_gpio_rx_buffer[0]) 	// error handling for bad i2c write
 		{
 			// call error function for bad i2c write to PCA9557 chip
@@ -395,8 +395,8 @@ void ExtGpioInit(void)
 
         ext_gpio_buffer[0] = CMD_OUTPUT;                            // command 0x01 in place buffer[0] is output high/low read/write
         ext_gpio_buffer[1] = ext_gpio_state[i];             // data of which pins are high/low
-        i2c_tx(ext_gpio_buffer, 2, ext_gpio_addr);          // tx's data for gpio output high/low
-        i2c_rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr);   // checks to see if values are correct
+        I2C_Tx(ext_gpio_buffer, 2, ext_gpio_addr);          // tx's data for gpio output high/low
+        I2C_Rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr);   // checks to see if values are correct
         if(ext_gpio_buffer[1] != ext_gpio_rx_buffer[0])     // error handling for bad i2c write
         {
             // call error function for bad i2c write to PCA9557 chip
@@ -465,10 +465,10 @@ void GpioSetDirArray(uint16_t pin_array_, uint16_t array_)
     uint16_t ext_gpio_rx_buffer[2];
 
 	ext_gpio_addr = ext_gpio_addrs[pin_array_-1];			// sets address
-	ext_gpio_buffer[0] = CMD_OUTPUT; 								// command 0x01 in place buffer[0] is output high/low read/write
+	ext_gpio_buffer[0] = CMD_OUTPUT; 						// command 0x01 in place buffer[0] is output high/low read/write
 	ext_gpio_buffer[1] = array_; 							// new high/low pin data
-	i2c_tx(ext_gpio_buffer, 2, ext_gpio_addr); 				// send new high/low pin data
-	i2c_rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr); 		// read it back to make sure write was successful
+	I2C_Tx(ext_gpio_buffer, 2, ext_gpio_addr); 				// send new high/low pin data
+	I2C_Rx(ext_gpio_rx_buffer, 1, ext_gpio_buffer[0], ext_gpio_addr); 		// read it back to make sure write was successful
 	if(ext_gpio_buffer[1] != ext_gpio_rx_buffer[0]) 		// check for same data
 	{
 		// call error function for bad i2c write to PCA9557 chip
@@ -484,7 +484,7 @@ void ExtGpioReadSet(uint16_t pin_set_, uint16_t* read_buffer_)
     uint16_t ext_gpio_addr;
 
 	ext_gpio_addr = ext_gpio_addrs[pin_set_ - 1];
-	i2c_rx(read_buffer_, 1, CMD_INPUT, ext_gpio_addr); 						// reads output port data to read_buffer (we just want to know if we set it right, right?)
+	I2C_Rx(read_buffer_, 1, CMD_INPUT, ext_gpio_addr); 						// reads output port data to read_buffer (we just want to know if we set it right, right?)
 }
 
 // send a command such as 2 to get all pin states for GPIO 200-207
