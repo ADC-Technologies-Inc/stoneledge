@@ -19,7 +19,6 @@
 uint16_t GetMaxTempData(void);
 uint16_t GetTempDataSingle(uint16_t rhu_);
 int ProcessTempData(void);
-//uint16_t ConvertTemp(uint16_t counts_);
 void EvaluateTempData(void);
 void InitTemp(void);
 

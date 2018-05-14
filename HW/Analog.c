@@ -182,7 +182,6 @@ void ConfigADC()
    AdcRegs.ADCINTSOCSEL1.bit.SOC5  = 0;
    AdcRegs.ADCINTSOCSEL1.bit.SOC6  = 0;
    AdcRegs.ADCINTSOCSEL1.bit.SOC7  = 0;
-
    AdcRegs.ADCINTSOCSEL2.bit.SOC8  = 0;
    AdcRegs.ADCINTSOCSEL2.bit.SOC9  = 0;
    AdcRegs.ADCINTSOCSEL2.bit.SOC10 = 0;
@@ -201,8 +200,10 @@ void ConfigADC()
    AdcRegs.INTSEL1N2.bit.INT1CONT   = 0;		// Disable ADCINT1 Continuous mode
    AdcRegs.INTSEL1N2.bit.INT1SEL	= 0x0C;		// setup EOC12 to trigger ADCINT1 to fire
 
+   //This sample is discarded
    AdcRegs.ADCSOC0CTL.bit.CHSEL 	= 0x00;		// set SOC0 channel select to ADCINA0(dummy sample for rev0 errata workaround)
 
+   //12 channels total, 11 MUX and 1 for current (ADCINB7)
    AdcRegs.ADCSOC1CTL.bit.CHSEL 	= 0x00;		// set SOC1 channel select to ADCINA0
    AdcRegs.ADCSOC2CTL.bit.CHSEL 	= 0x01; 	// set SOC2 channel select to ADCINA1
    AdcRegs.ADCSOC3CTL.bit.CHSEL 	= 0x02; 	// set SOC3 channel select to ADCINA2
@@ -211,16 +212,12 @@ void ConfigADC()
    AdcRegs.ADCSOC6CTL.bit.CHSEL 	= 0x05; 	// set SOC6 channel select to ADCINA5
    AdcRegs.ADCSOC7CTL.bit.CHSEL 	= 0x06; 	// set SOC7 channel select to ADCINA6
    AdcRegs.ADCSOC8CTL.bit.CHSEL 	= 0x07; 	// set SOC8 channel select to ADCINA7
-
    AdcRegs.ADCSOC9CTL.bit.CHSEL 	= 0x08;		// set SOC9  channel select to ADCINB0
    AdcRegs.ADCSOC10CTL.bit.CHSEL 	= 0x09; 	// set SOC10 channel select to ADCINB1
    AdcRegs.ADCSOC11CTL.bit.CHSEL 	= 0x0A; 	// set SOC11 channel select to ADCINB2
-   //AdcRegs.ADCSOC12CTL.bit.CHSEL 	= 0x0B; 	// set SOC12 channel select to ADCINB3
-   //AdcRegs.ADCSOC13CTL.bit.CHSEL 	= 0x0C; 	// set SOC13 channel select to ADCINB4
-   //AdcRegs.ADCSOC14CTL.bit.CHSEL 	= 0x0D; 	// set SOC14 channel select to ADCINB5
-   //AdcRegs.ADCSOC15CTL.bit.CHSEL 	= 0x0E; 	// set SOC15 channel select to ADCINB6
    AdcRegs.ADCSOC12CTL.bit.CHSEL 	= 0x0F; 	// set SOC13 channel select to ADCINB7
 
+   //all are triggered by ePWM5
    AdcRegs.ADCSOC0CTL.bit.TRIGSEL 	= 0x0D;		//set SOC0 start trigger on EPWM1 SOCA, due to round-robin SOC0 converts first then SOC1, then SOC3
    AdcRegs.ADCSOC1CTL.bit.TRIGSEL 	= 0x0D;		//set SOC1 start trigger on EPWM1 SOCA, due to round-robin SOC0 converts first then SOC1, then SOC3
    AdcRegs.ADCSOC2CTL.bit.TRIGSEL 	= 0x0D;
@@ -235,8 +232,9 @@ void ConfigADC()
    AdcRegs.ADCSOC11CTL.bit.TRIGSEL 	= 0x0D;
    AdcRegs.ADCSOC12CTL.bit.TRIGSEL 	= 0x0D;
 
-   AdcRegs.ADCSOC0CTL.bit.ACQPS 	= 6;		//set SOC0 S/H Window to 7 ADC Clock Cycles, (6 ACQPS plus 1)
-   AdcRegs.ADCSOC1CTL.bit.ACQPS 	= 21;		//set SOC1 S/H Window to 32 ADC Clock Cycles, (6 ACQPS plus  26)
+   //22 clock cycles for S/H
+   AdcRegs.ADCSOC0CTL.bit.ACQPS 	= 6;
+   AdcRegs.ADCSOC1CTL.bit.ACQPS 	= 21;
    AdcRegs.ADCSOC2CTL.bit.ACQPS 	= 21;
    AdcRegs.ADCSOC3CTL.bit.ACQPS 	= 21;
    AdcRegs.ADCSOC4CTL.bit.ACQPS 	= 21;
@@ -261,7 +259,11 @@ void ConfigADC()
  *
  -----------------------------------------------------------------------------------------------------------*/
 __interrupt void  adc_isr(void)
-{//GpioDataRegs.GPASET.bit.GPIO2 = 1;
+{
+  //fired by ADCINT1 (which is configured to fire after ADCRESULT12 finishes converting)
+
+
+
   AnalogChannels.adcina0[AnalogChannels.adcindex] = AdcResult.ADCRESULT1; //discard ADCRESULT0 as part of the workaround to the 1st sample errata for rev0
   AnalogChannels.adcina1[AnalogChannels.adcindex] = AdcResult.ADCRESULT2;
   AnalogChannels.adcina2[AnalogChannels.adcindex] = AdcResult.ADCRESULT3;
@@ -270,14 +272,9 @@ __interrupt void  adc_isr(void)
   AnalogChannels.adcina5[AnalogChannels.adcindex] = AdcResult.ADCRESULT6;
   AnalogChannels.adcina6[AnalogChannels.adcindex] = AdcResult.ADCRESULT7;
   AnalogChannels.adcina7[AnalogChannels.adcindex] = AdcResult.ADCRESULT8;
-
   AnalogChannels.adcinb0[AnalogChannels.adcindex] = AdcResult.ADCRESULT9;
   AnalogChannels.adcinb1[AnalogChannels.adcindex] = AdcResult.ADCRESULT10;
   AnalogChannels.adcinb2[AnalogChannels.adcindex] = AdcResult.ADCRESULT11;
-  //AnalogChannels.adcinb3[AnalogChannels.adcindex] = AdcResult.ADCRESULT12;
-  //AnalogChannels.adcinb4[AnalogChannels.adcindex] = AdcResult.ADCRESULT13;
-  //AnalogChannels.adcinb5[AnalogChannels.adcindex] = AdcResult.ADCRESULT14;
-  //AnalogChannels.adcinb6[AnalogChannels.adcindex] = AdcResult.ADCRESULT15;
   AnalogChannels.adcinb7[AnalogChannels.adcindex] = AdcResult.ADCRESULT12; // board current measurement - always - irrelevant of the ADC MUX
 
   AnalogChannels.adcindex++;

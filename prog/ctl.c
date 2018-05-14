@@ -311,6 +311,9 @@ void CTL_Init(void){
     printf("CTL_Init():: Entering RHU Ramp Upm\n" );
     #endif
 
+    //Enable watchdog ISR - it doesn't seem like the optical isolators are working, disabled RHU sensor for now
+    //EPwm1Regs.ETSEL.bit.INTEN = 0x01;
+
     for ( rhu = 0; rhu < RHU_COUNT; ){
 
         /*bring up the RHUs in order*/
