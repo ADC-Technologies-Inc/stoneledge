@@ -31,8 +31,8 @@ struct rhu_state__{
 //===========================================================================
 
 #ifdef LOW_DUTY_MODE
-const static uint16_t DUTY_TABLE[4] = {0, 50, 75, 100};
-const static uint16_t RAMP_TABLE[4] = {0, 10, 15, 20 };
+const static uint16_t DUTY_TABLE[4] = {0, 25, 75, 100};
+const static uint16_t RAMP_TABLE[4] = {0, 5, 15, 20 };
 #else
 const static uint16_t DUTY_TABLE[4] = {0, 500, 750, 1000};
 const static uint16_t RAMP_TABLE[4] = {0, 100, 150, 200 };
@@ -68,9 +68,9 @@ void RHU_Disable48V(void)
 	GpioDataRegs.GPBCLEAR.bit.GPIO40 = 0x01;
 }
 
-/*Verify that the fust is on*/
+/*Verify that the fuse is on*/
 Uint16 RHU_Get48VFuse(void){
-    uint16_t state = GpioDataRegs.GPADAT.bit.GPIO25;
+    uint16_t state = !GpioDataRegs.GPADAT.bit.GPIO25;   //inverted
 
     #ifdef DEBUG_RHU
     printf("RHU_Get48VFuse():: Returning 48V Fuse (GPIO40) state as %d\n", state );
@@ -81,8 +81,9 @@ Uint16 RHU_Get48VFuse(void){
 
 /*This function is called when RHU TCOs should be read instantaneously, will be called from within ePWM1 ISR- quick as poss.*/
 void RHU_PWMCallback( void ){
-    uint16_t toggle = 0;
+    uint16_t toggle = 1;
     uint16_t gpio_set;
+
 
     /*TODO*/
     //WE MAY MAKE THIS REQUIRE 3 CONSECUTIVE FAILS TO CONSTITUTE A FAIL
@@ -96,6 +97,9 @@ void RHU_PWMCallback( void ){
     if (toggle){
         //Pull GPIO 500 data set
         gpio_set = ExtGpioGetSet(5);
+        #ifdef DEBUG_RHU
+        printf("RHU_PWMCallback():: 500 GPIOSET="PRINTF_BINSTR8"\n", PRINTF_BINSTR8_ARGS(gpio_set) );
+        #endif
 
         /*/Update local status
          *
@@ -106,13 +110,17 @@ void RHU_PWMCallback( void ){
          *
          */
 
-        rhu_state[CPU1].has_power = gpio_set & 0x10;
-        rhu_state[CPU2].has_power = gpio_set & 0x20;
-        rhu_state[RAM].has_power = gpio_set & 0x40;
-        rhu_state[MISC].has_power = gpio_set & 0x01;
+        rhu_state[CPU1].has_power = !(gpio_set & 0x10);
+        rhu_state[CPU2].has_power = !(gpio_set & 0x20);
+        rhu_state[RAM].has_power = !(gpio_set & 0x40);
+        rhu_state[MISC].has_power = !(gpio_set & 0x01);
+        toggle = 0;
     }else{
         //Pull GPIO 600 data set
         gpio_set = ExtGpioGetSet(6);
+        #ifdef DEBUG_RHU
+        printf("RHU_PWMCallback():: 600 GPIOSET="PRINTF_BINSTR8"\n", PRINTF_BINSTR8_ARGS(gpio_set) );
+        #endif
 
         /*/Update local status
          *
@@ -123,10 +131,11 @@ void RHU_PWMCallback( void ){
          *
          */
 
-        rhu_state[M_2_GRP].has_power = gpio_set & 0x01;
-        rhu_state[DIMM_GRP].has_power = gpio_set & 0x02;
-        rhu_state[MEZZ].has_power = gpio_set & 0x04;
-        rhu_state[SFF_GRP].has_power = gpio_set & 0x08;
+        rhu_state[M_2_GRP].has_power = !(gpio_set & 0x01);
+        rhu_state[DIMM_GRP].has_power = !(gpio_set & 0x02);
+        rhu_state[MEZZ].has_power = !(gpio_set & 0x04);
+        rhu_state[SFF_GRP].has_power = !(gpio_set & 0x08);
+        toggle = 1;
     }
 }
 
@@ -276,8 +285,8 @@ void RHU_EStopRHU(void)
 #define READDUTY(a_,b_) ( ExtGpioRead(a_) ? 0x02 : 0 ) +  ( ExtGpioRead(b_) ? 0x01 : 0 )
 
 #define SETDUTY(a_,b_, c_) temp_duty = READDUTY(a_, b_);\
-        rhu_state[c].duty = DUTY_TABLE[temp_duty];\
-        rhu_state[c].ramp_inc = RAMP_TABLE[temp_duty];\
+        rhu_state[c_].duty = DUTY_TABLE[temp_duty];\
+        rhu_state[c_].ramp_inc = RAMP_TABLE[temp_duty];
 
 void RHU_Init(void)
 {

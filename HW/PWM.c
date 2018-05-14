@@ -11,6 +11,7 @@
 
 //#include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
 #include "PWM.h"
+#include "../prog/ntd_debug.h"
 
 #include "IQmathLib.h"
 #include "../HW/ModuleConfig.h"
@@ -43,9 +44,9 @@ static volatile Uint16 *PWM_DutyRegs[8]; 						// array of pointers to the duty 
  -----------------------------------------------------------------------------------------------------------*/
 
 /*set_duty = duty% * 100. */
-/*TODO, CHECK THIS*/
 void PWM_SetDuty(uint16_t channel_, uint16_t set_duty_)
 {
+    printf("PWM_SetDuty():: Setting channel %d to %d\n", channel_, set_duty_);
 	*PWM_DutyRegs[channel_] = set_duty_;
 }
 
@@ -244,6 +245,7 @@ void PWM_Init()
 //Highest priority group 3 vector, called when the duty cycle starts- measure if RHUs are on here
 __interrupt void  PWM_ePWM1_ISR__dutycycle(void)
 {
+    static uint16_t count = 15;
     //ENABLE i2c and ePWM5 interrupts while in this one (group 8, 3)
 
     uint16_t TempPIEIER3;
@@ -259,8 +261,11 @@ __interrupt void  PWM_ePWM1_ISR__dutycycle(void)
     asm(" NOP");                                // wait one cycle
     EINT;                                       // re-enable global interrupts
 
-    /*Callback runs here*/
-    RHU_PWMCallback();
+    /*Callback runs here, only every 16th time round*/
+    if (count==15){
+        RHU_PWMCallback();
+        count = 0;
+    }else count++;
 
 	// Clear INT flag for this timer
 	EPwm1Regs.ETCLR.bit.INT = 1;
@@ -332,7 +337,7 @@ __interrupt void  PWM_ePWM4_ISR__analog(void)
 __interrupt void  PWM_ePWM5_ISR__tickcount(void)
 {
 	//GpioDataRegs.GPASET.bit.GPIO0 = 1;
-	// EPWM5 takes care of the time (in ms) as well as the analog reads (1KHz)
+	// EPWM5 takes care of the time (in ms)
 
     //no point incurring the call overhead to increment a single var that should be atomic anyway.
 	//increment_time_ms();

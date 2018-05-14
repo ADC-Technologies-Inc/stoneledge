@@ -7,6 +7,7 @@
 
 //#define DEBUG_TEMPS
 
+#include "ntd_debug.h"
 #ifdef DEBUG_TEMPS
 #include "ntd_debug.h"
 #endif
@@ -366,6 +367,28 @@ uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
     double tempNum   = 0;                   // numerator of temp calc
     double T         = 0;                   // result of temp calc in Kelvin
 
+    double exp_holder = 0, r_inf = 0;
+
+    //Measurement outside of range (disconnected)
+    if (counts_ == 4095 || counts_ <= 100) return 0;
+
+    //Calculate Resistance reading
+    R = 10000 * ( (4096/ (double) counts_) -1 );
+
+    tempDen = log(R / r_inf_);               // used natural log to calculate the denominator of temp calc
+    T = beta_ / tempDen;                  // temp in K
+    T -= C_TO_K;                            // converts to C
+    T *= 10;                                // converts to C * 10
+    return (uint16_t) T;
+}
+
+/*uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
+{
+    double R         = 0;                   // measured resistance of NTC
+    double tempDen   = 0;                   // denominator of temp calc
+    double tempNum   = 0;                   // numerator of temp calc
+    double T         = 0;                   // result of temp calc in Kelvin
+
     //Calculate resistance reading
     tempNum = RES_DIV*(double)(4096 - counts_);
     tempNum /= (double)4096;
@@ -378,7 +401,7 @@ uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
     T -= C_TO_K;                            // converts to C
     T *= 10;                                // converts to C * 10
     return (uint16_t) T;                     // returns at uint16_t
-}
+}*/
 
 void InitTemp(void)
 {

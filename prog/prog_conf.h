@@ -102,15 +102,6 @@
 #define 	STARTUP_DELAY 				9000 		//
 #define 	MAIN_LOOP_MS 				1000 		// (ms * 1000) sets timing for main loop (monitoring board, not ethernet tx)
 
-#define 	RHU_1_STARTUP_DELAY 		0			// once the RHUs start turning on, wait x Ms before powering on this RHU
-#define 	RHU_2_STARTUP_DELAY 		500			// once the RHUs start turning on, wait x Ms before powering on this RHU
-#define 	RHU_3_STARTUP_DELAY 		1000		// once the RHUs start turning on, wait x Ms before powering on this RHU
-#define 	RHU_4_STARTUP_DELAY 		1500		// once the RHUs start turning on, wait x Ms before powering on this RHU
-#define 	RHU_5_STARTUP_DELAY 		2000		// once the RHUs start turning on, wait x Ms before powering on this RHU
-#define 	RHU_6_STARTUP_DELAY 		2500		// once the RHUs start turning on, wait x Ms before powering on this RHU
-#define 	RHU_7_STARTUP_DELAY 		3000		// once the RHUs start turning on, wait x Ms before powering on this RHU
-#define 	RHU_8_STARTUP_DELAY 		3500		// once the RHUs start turning on, wait x Ms before powering on this RHU
-
 // Enables
 
 //#define 	USE_ETHERNET 							// uncomment to bring ethernet online (not ready)
@@ -123,7 +114,7 @@
 #define 	USE_RHU_2 	0 							//
 #define 	USE_RHU_3 	0 							//
 #define 	USE_RHU_4 	0 							//
-#define 	USE_RHU_5 	0 							//
+#define 	USE_RHU_5 	1 							//
 #define 	USE_RHU_6 	0 							//
 #define 	USE_RHU_7 	0 							//
 #define 	USE_RHU_8 	0 							//
