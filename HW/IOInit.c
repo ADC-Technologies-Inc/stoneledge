@@ -82,28 +82,28 @@ void InitGpio_start(void)
 
    	   ///////////////////////////////////////////// EPWM1A
 	   // Enable an EPWMA1 on GPIO0, pullup
-	   //GpioCtrlRegs.GPAPUD.bit.GPIO0 = 1;   // Disable pullup on GPIO0
-	   //GpioCtrlRegs.GPAMUX1.bit.GPIO0 = 1;  // GPIO0 = EPWM1A
+	   GpioCtrlRegs.GPAPUD.bit.GPIO0 = 1;   // Disable pullup on GPIO0
+	   GpioCtrlRegs.GPAMUX1.bit.GPIO0 = 1;  // GPIO0 = EPWM1A
 	   GpioCtrlRegs.GPADIR.bit.GPIO0 = 1;   // GPIO0 = OUTPUT
 
-	   GpioCtrlRegs.GPAMUX1.bit.GPIO0 = 0;
+	   //GpioCtrlRegs.GPAMUX1.bit.GPIO0 = 0;
 
 
 	   ///////////////////////////////////////////// EPWM1B
 	   // Enable an EPWM1B on GPIO1, no pullup
-	   //GpioCtrlRegs.GPAPUD.bit.GPIO1 = 1;   // Disable pullup on GPIO1
-	   //GpioCtrlRegs.GPAMUX1.bit.GPIO1 = 1;  // GPIO1 = EPWM1B
+	   GpioCtrlRegs.GPAPUD.bit.GPIO1 = 1;   // Disable pullup on GPIO1
+	   GpioCtrlRegs.GPAMUX1.bit.GPIO1 = 1;  // GPIO1 = EPWM1B
 	   GpioCtrlRegs.GPADIR.bit.GPIO1 = 1;   // GPIO1 = output
 
-	   GpioCtrlRegs.GPAMUX1.bit.GPIO1 = 0;
+	   //GpioCtrlRegs.GPAMUX1.bit.GPIO1 = 0;
 
 	   ///////////////////////////////////////////// EPWM2A
 	   // Enable an EPWM2A on GPIO2, no pullup
-	   //GpioCtrlRegs.GPAPUD.bit.GPIO2 = 1;   // Disable pullup on GPIO2
-	   //GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 1;  // GPIO2 = EPWM2A
+	   GpioCtrlRegs.GPAPUD.bit.GPIO2 = 1;   // Disable pullup on GPIO2
+	   GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 1;  // GPIO2 = EPWM2A
 	   GpioCtrlRegs.GPADIR.bit.GPIO2 = 1;   // GPIO2 = output
 
-	   GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 0;
+	   //GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 0;
 
 	   ///////////////////////////////////////////// EPWM2B
 	   // Enable an EPWM2B on GPIO3, no pullup
