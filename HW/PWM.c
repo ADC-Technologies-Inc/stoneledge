@@ -46,7 +46,9 @@ static volatile Uint16 *PWM_DutyRegs[8]; 						// array of pointers to the duty 
 /*set_duty = duty% * 100. */
 void PWM_SetDuty(uint16_t channel_, uint16_t set_duty_)
 {
-    printf("PWM_SetDuty():: Setting channel %d to %d\n", channel_, set_duty_);
+    #ifdef DEBUG_PWM
+    printf("PWM_SetDuty():: Setting channel %u to %u\n", channel_, set_duty_);
+    #endif
 	*PWM_DutyRegs[channel_] = set_duty_;
 }
 
@@ -97,6 +99,7 @@ void PWM_Init()
    EPwm1Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
    EPwm1Regs.TBCTL.bit.PHSEN 		= 0;		     		// Phase loading disabled
    EPwm1Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
+   EPwm1Regs.TBCTL.bit.PHSDIR        = 1;                    // Count up after sync
    EPwm1Regs.TBCTL.bit.SYNCOSEL 	= TB_CTR_ZERO;			// output sync pulse when counter == 0
    EPwm1Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
    EPwm1Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
@@ -116,7 +119,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM2
    /////////////////////////////////
-   EPwm2Regs.TBPRD 					= 10000;			     	// Period = 1000 TBCLK counts
+   EPwm2Regs.TBPRD 					= 10000;			    // Period = 1000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	   	// with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm2Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm2Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -124,6 +127,7 @@ void PWM_Init()
    EPwm2Regs.TBCTR 					= 0;					// clear TB counter
    EPwm2Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
    EPwm2Regs.TBCTL.bit.PHSEN 		= TB_ENABLE;		    // Phase loading enabled
+   EPwm2Regs.TBCTL.bit.PHSDIR        = 1;                   // Count up after sync
    EPwm2Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
    EPwm2Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
    EPwm2Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
@@ -139,7 +143,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM3
    /////////////////////////////////
-   EPwm3Regs.TBPRD 					= 10000;			     	// Period = 1000 TBCLK counts
+   EPwm3Regs.TBPRD 					= 10000;			    // Period = 10000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	   	// with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm3Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm3Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -147,6 +151,7 @@ void PWM_Init()
    EPwm3Regs.TBCTR 					= 0;					// clear TB counter
    EPwm3Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
    EPwm3Regs.TBCTL.bit.PHSEN 		= TB_ENABLE;		    // Phase loading enabled
+   EPwm3Regs.TBCTL.bit.PHSDIR       = 1;                    // Count up after sync
    EPwm3Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
    EPwm3Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
    EPwm3Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
@@ -162,7 +167,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM6
    /////////////////////////////////
-   EPwm6Regs.TBPRD 					= 10000;			     	// Period = 1000 TBCLK counts
+   EPwm6Regs.TBPRD 					= 10000;			    // Period = 10000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	    // with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm6Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm6Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -170,10 +175,11 @@ void PWM_Init()
    EPwm6Regs.TBCTR 					= 0;					// clear TB counter
    EPwm6Regs.TBCTL.bit.CTRMODE 		= 0;			  		// Count up
    EPwm6Regs.TBCTL.bit.PHSEN 		= TB_ENABLE;		    // Phase loading enabled
+   EPwm6Regs.TBCTL.bit.PHSDIR       = 1;                    // Count up after sync
    EPwm6Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
    EPwm6Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
-   EPwm6Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
-   EPwm6Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
+   EPwm6Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// /8  TBCLK = SYSCLK/24
+   EPwm6Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// /4  Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm6Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
    EPwm6Regs.CMPCTL.bit.SHDWBMODE 	= CC_SHADOW;			// shadow update for B
    EPwm6Regs.CMPCTL.bit.LOADAMODE 	= CC_CTR_ZERO; 			// load [new duty cycle from shadow register] on CTR = zero
@@ -182,6 +188,7 @@ void PWM_Init()
    EPwm6Regs.AQCTLA.bit.CAU 		= AQ_CLEAR;				// Sets EPWM6A low on CTR = CMPA
    EPwm6Regs.AQCTLB.bit.ZRO 		= AQ_SET;				// Sets EPWM6B high on CTR = zero
    EPwm6Regs.AQCTLB.bit.CBU 		= AQ_CLEAR;				// Sets EPWM6B low on CTR = CMPB
+
    /////////////////////////////////
    //	EPwm5
    /////////////////////////////////

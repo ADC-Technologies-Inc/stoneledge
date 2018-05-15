@@ -14,11 +14,6 @@
  * General configurable settings for ADCt program
  *
  -----------------------------------------------------------------------------------------------------------*/
-// modes
-#define 	PRE_STARTUP_MODE 			0
-#define 	STARTUP_MODE 				1
-#define 	RUNNING_MODE 				2
-#define 	CRITICAL_FAILURE_MODE 		3
 
 // lcd modes
 
@@ -98,26 +93,22 @@
 
 // Timing Settings
 
-#define 	PRE_STARTUP_DELAY 			5000 		// delay (ms)
-#define 	STARTUP_DELAY 				9000 		//
-#define 	MAIN_LOOP_MS 				1000 		// (ms * 1000) sets timing for main loop (monitoring board, not ethernet tx)
-
 // Enables
 
-//#define 	USE_ETHERNET 							// uncomment to bring ethernet online (not ready)
-#define 	USE_LCD 								// uncomment to bring LCD online
-#define 	BYPASS_TCO_ERROR 						// uncomment to stop triggering TCO fail errors
-#define 	LOW_DUTY_MODE 							// uncomment to do limited testing without proper heatsinks
+//#define 	USE_ETHERNET 	1						// uncomment to bring ethernet online (not ready)
+#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
 													// new duty cycles settings are 0, 5%, 7.5%, 10%
+#define     IGNORE_48VFUSE  1                         // uncomment to ignore a disconnected 48v fuse
 
-#define 	USE_RHU_1 	0 							// set to 0 to disabled RHU
-#define 	USE_RHU_2 	0 							//
-#define 	USE_RHU_3 	0 							//
-#define 	USE_RHU_4 	0 							//
+
+#define 	USE_RHU_1 	1 							// set to 0 to disabled RHU
+#define 	USE_RHU_2 	1 							//
+#define 	USE_RHU_3 	1 							//
+#define 	USE_RHU_4 	1 							//
 #define 	USE_RHU_5 	1 							//
-#define 	USE_RHU_6 	0 							//
-#define 	USE_RHU_7 	0 							//
-#define 	USE_RHU_8 	0 							//
+#define 	USE_RHU_6 	1 							//
+#define 	USE_RHU_7 	1 							//
+#define 	USE_RHU_8 	1 							//
 
 /*-----------------------------------------------------------------------------------------------------------
  *
@@ -137,8 +128,8 @@
 
 #define 	AIR_TEMP_MAX_LIMIT 			700 		// temp value (c * 10) before error is thrown
 #define 	BOARD_TEMP_MAX_LIMIT 		700			// Board temp limit
-#define     RHU1_TEMP_MAX_LIMIT         700         // CPU1
-#define     RHU2_TEMP_MAX_LIMIT         700         // CPU2
+#define     RHU1_TEMP_MAX_LIMIT         800         // CPU1
+#define     RHU2_TEMP_MAX_LIMIT         800         // CPU2
 #define 	RHU_TEMP_MAX_LIMIT 			700         // All other RHUs
 
 
@@ -151,9 +142,33 @@
 //  RHU RAMP
 ////////////////////////////////////////
 
-#define     MIN_DUTY_TOCHECK_CYCLE      50
-#define     RAMP_DELAY_CPU              10000
-#define     RAMP_DELAY                  5000
-#define     RHU_WATCHDOG_DELAY              30000       //turn off each RHU for a minimum of 30s
+#define     MIN_DUTY_TOCHECK_CYCLE      50          //minimum duty-cycle before a test of the RHU TCO/PTC will be performed, ensures that the optical isolaters states have been read ok
+#define     RAMP_DELAY_CPU              10000       //delay between ramp cycles for CPU
+#define     RAMP_DELAY                  5000        //delay between ramp cycles for other RHUs
+
+////////////////////////////////////////
+//  WATCHDOG
+////////////////////////////////////////
+#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail errors
+#define     RHU_WATCHDOG_DELAY          30000       //turn off each RHU for a minimum of 30s
+
+
+////////////////////////////////////////
+//  DEBUG SWITCHES
+////////////////////////////////////////
+#ifndef DEBUG
+#define DEBUG                                       //if DEBUG is set the ASSERT macro in ntd_debug.h are operational, otherwise they do nothing
+#endif
+
+#define DEBUG_CTL                       1           //ctl.c
+#define DEBUG_RHU                       1           //RHU.c
+#define DEBUG_PWM                       1           //PWM.c
+//#define DEBUG_IOINIT                    1           //IOInit.c
+//#define DEBUG_LCD                       1           //LCD.c
+//#define DEBUG_LED                       1           //LED.c
+//#define DEBUG_SYS_ID                    1           //SysID.c
+//#define DEBUG_TEMPS                     1           //temps.c*/
+
+
 
 #endif /* PROG_PROG_CONF_H_ */

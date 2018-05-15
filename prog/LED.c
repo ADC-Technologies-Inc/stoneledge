@@ -13,8 +13,8 @@
 #include "LED.h"
 #include "stdio.h"
 #include "DSP2803x_Examples.h"
+#include "ntd_debug.h"
 
-//#define DEBUG_LED
 
 /*PRIVATE VARS*/
 struct LED_Pins_ {

@@ -14,14 +14,8 @@
  *
  */
 
-//#define DEBUG_IOINIT
-
 #include "../HW/IOInit.h"
-
-#ifdef DEBUG_IOINIT
 #include "../prog/ntd_debug.h"
-#endif
-
 
 // defines
 #define CMD_INPUT 0x00
@@ -111,6 +105,8 @@ void InitGpio_start(void)
 	   GpioCtrlRegs.GPAMUX1.bit.GPIO3 = 1;  // GPIO3 = EPWM2B
 	   GpioCtrlRegs.GPADIR.bit.GPIO3 = 1;   // GPIO3 = output
 
+
+
 	   ///////////////////////////////////////////// EPWM3A
 	   // Enable an EPWM3A on GPIO4, pullup
 	   GpioCtrlRegs.GPAPUD.bit.GPIO4 = 1;   // Enable pullup on GPIO4
@@ -146,24 +142,16 @@ void InitGpio_start(void)
 	   GpioCtrlRegs.GPAMUX1.bit.GPIO9 = 0;  // GPIO9 = GPIO9
 	   GpioCtrlRegs.GPADIR.bit.GPIO9 = 1;   // GPIO9 = output
 
-#ifndef DRV8701E /*if "normal" DRV8701P chip*/
-// EPWM6A - MOTOR DRIVE
-	   /////////////////////////////////////////////  EPWM6A
-	   // Enable an GPIO input on GPIO10, pullup
-	   GpioCtrlRegs.GPAPUD.bit.GPIO10 = 0;   // Enable pullup on GPIO10
-	   GpioCtrlRegs.GPAMUX1.bit.GPIO10 = 1;  // GPIO10 = EPWM6A
-#else /*if "normal" DRV8701P chip*/
-	   GpioCtrlRegs.GPAPUD.bit.GPIO10 = 0;   // Enable pullup on GPIO10
-	   GpioCtrlRegs.GPAMUX1.bit.GPIO10 = 0;  // GPIO10 = GPIO10
-	   GpioDataRegs.GPACLEAR.bit.GPIO10 = 1; //
-	   GpioCtrlRegs.GPADIR.bit.GPIO10 = 1;   // GPIO10 = output
 
-#endif /*if "normal" DRV8701P chip*/
-// EPWM6B - MOTOR DRIVE
 	   /////////////////////////////////////////////  EPWM6B
-	   // Enable an GPIO input on GPIO11, pullup
-	   GpioCtrlRegs.GPAPUD.bit.GPIO11 = 0;   // Enable pullup on GPIO11
-	   GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 1;  // GPIO11 = EPWM6B
+       GpioCtrlRegs.GPAPUD.bit.GPIO10 = 1;   // Enable pullup on GPIO11
+       GpioCtrlRegs.GPAMUX1.bit.GPIO10 = 1;  // GPIO11 = EPMW6A
+       GpioCtrlRegs.GPADIR.bit.GPIO10 = 1;   // GPIO11 = output
+
+	   /////////////////////////////////////////////  EPWM6B
+	   GpioCtrlRegs.GPAPUD.bit.GPIO11 = 1;   // Enable pullup on GPIO11
+	   GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 1;  // GPIO11 = EPMW6B
+	   GpioCtrlRegs.GPADIR.bit.GPIO11 = 1;   // GPIO11 = output
 
 	  // GPIO12 - UART_TX
 	  /////////////////////////////////////////////

@@ -102,6 +102,8 @@ void AdcOffsetSelfCal()
     AdcConvMean = AdcConversion();                      //Capture ADC conversion on VREFLO
     AdcRegs.ADCOFFTRIM.bit.OFFTRIM = 80 - AdcConvMean;  //Set offtrim register with new value (i.e remove artical offset (+80) and create a two's compliment of the offset error)
     AdcRegs.ADCCTL1.bit.VREFLOCONV = 0;                 //Select external ADCIN5 input pin on B5
+
+    AdcRegs.ADCCTL1.bit.ADCREFSEL = 1;                  //reselect external reference mode... is this it?
     EDIS;
 }
 

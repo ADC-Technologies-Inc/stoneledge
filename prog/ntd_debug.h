@@ -1,8 +1,5 @@
-#ifndef DEBUG
-#define DEBUG
-#endif
-
 #include "stdio.h"
+#include "prog_conf.h"
 
 #define PRINTF_BINSTR8 "%d%d%d%d%d%d%d%d"
 #define PRINTF_BINSTR8_ARGS(in_)\
@@ -18,8 +15,7 @@
 #ifdef DEBUG
 #define ASSERT_(x_) if ( (!x_) ) printf("ASSERT FAILED "__FILE__" line: %d\n", __LINE__ );
 #define ASSERT( x_ ) ASSERT_( (x_) )
-
-#elif
+#else
 #define ASSERT( x_ )
 #endif
 

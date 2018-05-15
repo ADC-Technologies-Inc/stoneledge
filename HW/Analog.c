@@ -192,7 +192,7 @@ void ConfigADC()
    AdcRegs.ADCINTSOCSEL2.bit.SOC15 = 0;
 
    AdcRegs.ADCCTL1.bit.INTPULSEPOS	= 1;		// ADCINT1 trips after AdcResults latch
-   AdcRegs.ADCCTL1.bit.ADCREFSEL 	= 0;
+   AdcRegs.ADCCTL1.bit.ADCREFSEL 	= 1;
 
    AdcRegs.ADCCTL2.bit.ADCNONOVERLAP = 1;
 

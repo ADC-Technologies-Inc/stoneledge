@@ -6,12 +6,7 @@
  */
 
 #include "lcd.h"
-
-#define DEBUG_LCD
-
-#ifdef DEBUG_LCD
 #include "ntd_debug.h"
-#endif
 
 static uint16_t lcd_mode = 2;
 static uint32_t lcd_bottom_time = 0;

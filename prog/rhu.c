@@ -5,14 +5,8 @@
  *      Author: Zack Lyzen
  */
 
-#define DEBUG_RHU 1
-
 #include "../prog/rhu.h"
-
-
-#ifdef DEBUG_RHU
 #include "ntd_debug.h"
-#endif
 
 /*structs*/
 struct rhu_state__{
@@ -30,12 +24,12 @@ struct rhu_state__{
 // private variables
 //===========================================================================
 
-#ifdef LOW_DUTY_MODE
-const static uint16_t DUTY_TABLE[4] = {0, 25, 75, 100};
-const static uint16_t RAMP_TABLE[4] = {0, 5, 15, 20 };
-#else
+#ifdef LOW_DUTY_MODE    //5%, 7.5%, 10%
 const static uint16_t DUTY_TABLE[4] = {0, 500, 750, 1000};
 const static uint16_t RAMP_TABLE[4] = {0, 100, 150, 200 };
+#else                   //50%, 75%, 100%
+const static uint16_t DUTY_TABLE[4] = {0, 5000, 7500, 10000};
+const static uint16_t RAMP_TABLE[4] = {0, 1000, 1500, 2000 };
 #endif
 
 static struct rhu_state__ rhu_state[RHU_COUNT] = {{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
@@ -284,9 +278,16 @@ void RHU_EStopRHU(void)
 
 #define READDUTY(a_,b_) ( ExtGpioRead(a_) ? 0x02 : 0 ) +  ( ExtGpioRead(b_) ? 0x01 : 0 )
 
+#ifdef DEBUG_RHU
+#define SETDUTY(a_,b_, c_) temp_duty = READDUTY(a_, b_);\
+        rhu_state[c_].duty = DUTY_TABLE[temp_duty];\
+        rhu_state[c_].ramp_inc = RAMP_TABLE[temp_duty];\
+        printf("RHU_Init():: RHU %d duty switches read %d\n",c_,temp_duty);
+#else
 #define SETDUTY(a_,b_, c_) temp_duty = READDUTY(a_, b_);\
         rhu_state[c_].duty = DUTY_TABLE[temp_duty];\
         rhu_state[c_].ramp_inc = RAMP_TABLE[temp_duty];
+#endif
 
 void RHU_Init(void)
 {
@@ -381,7 +382,7 @@ void RHU_Watchdog_Service(){
     uint16_t i, temp, overheat = 0;
     uint32_t ms_since_last;
 
-#ifdef DEBUG
+#ifdef DEBUG_RHU
     //DEBUG, verify nothing is active while the counter is 0
     if (!wd_active){
         for (i = 0; i < RHU_COUNT; i++){
@@ -389,7 +390,7 @@ void RHU_Watchdog_Service(){
         }
         return;
     }
-#elif
+#else
     if (!wd_active) return; //nothing to do
 #endif
 
@@ -442,7 +443,7 @@ void RHU_Watchdog_Service(){
                     CTL_HardSTOP(FAIL_RAMP); //hardstop will never return
                     break;
                 }
-#ifdef RHU_DEBUG
+#ifdef DEBUG_RHU
             case RHU_DISABLED_BY_SWITCH:
             case RHU_DISABLED:{
                     //this is an error, shouldn't happen

@@ -5,14 +5,8 @@
  *      Author: Zack Lyzen
  */
 
-//#define DEBUG_TEMPS
-
-#include "ntd_debug.h"
-#ifdef DEBUG_TEMPS
-#include "ntd_debug.h"
-#endif
-
 #include "temps.h"
+#include "ntd_debug.h"
 
 #define NUM_TEMPS 		10
 
@@ -363,11 +357,7 @@ int ProcessTempData(void)
 uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
 {
     double R         = 0;                   // measured resistance of NTC
-    double tempDen   = 0;                   // denominator of temp calc
-    double tempNum   = 0;                   // numerator of temp calc
     double T         = 0;                   // result of temp calc in Kelvin
-
-    double exp_holder = 0, r_inf = 0;
 
     //Measurement outside of range (disconnected)
     if (counts_ == 4095 || counts_ <= 100) return 0;
@@ -375,8 +365,7 @@ uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
     //Calculate Resistance reading
     R = 10000 * ( (4096/ (double) counts_) -1 );
 
-    tempDen = log(R / r_inf_);               // used natural log to calculate the denominator of temp calc
-    T = beta_ / tempDen;                  // temp in K
+    T = beta_ / log(R / r_inf_);            // temp in K
     T -= C_TO_K;                            // converts to C
     T *= 10;                                // converts to C * 10
     return (uint16_t) T;

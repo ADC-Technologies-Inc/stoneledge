@@ -5,12 +5,10 @@
  *      Author: Zack Lyzen
  */
 
-//#define DEBUG_SYS_ID
-
 #include <stdint.h>
-#include "../prog/ntd_debug.h"
 
 #include "sys_id.h"
+#include "ntd_debug.h"
 
 Uint16 sysId = 0;
 
