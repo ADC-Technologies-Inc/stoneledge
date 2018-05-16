@@ -34,7 +34,17 @@ const static uint16_t msg_init_bad_48v[16]              = {0x34, 0x38, 0x56, 0x2
 const static uint16_t msg_fail_overheat_rhu_not_on[16]  = {0x4f, 0x56, 0x45, 0x52, 0x48, 0x45, 0x41, 0x54, 0x20, 0x52, 0x48, 0x55, 0x20, 0x44, 0x49, 0x53}; // "OVERHEAT RHU DIS"
 const static uint16_t msg_ramp_fail[16]                 = {0x46, 0x41, 0x49, 0x4c, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x49, 0x4e, 0x47, 0x20, 0x52, 0x48, 0x55}; // "FAIL RAMPING RHU"
 
-const static uint16_t *lcd_status_messages[14] = {msg_pre_startup
+const static uint16_t msg_ramp_rhu1[16]                 = {0x43, 0x50, 0x55, 0x31, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "CPU1 RAMP   xxx%"
+const static uint16_t msg_ramp_rhu2[16]                 = {0x43, 0x50, 0x55, 0x32, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "CPU2 RAMP   xxx%"
+const static uint16_t msg_ramp_rhu3[16]                 = {0x43, 0x53, 0x45, 0x54, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "CSET RAMP   xxx%"
+const static uint16_t msg_ramp_rhu4[16]                 = {0x52, 0x41, 0x4d, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "RAM RAMP    xxx%"
+const static uint16_t msg_ramp_rhu5[16]                 = {0x44, 0x49, 0x4d, 0x4d, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "DIMM RAMP   xxx%"
+const static uint16_t msg_ramp_rhu6[16]                 = {0x4d, 0x2e, 0x32, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "M.2 RAMP    xxx%"
+const static uint16_t msg_ramp_rhu7[16]                 = {0x53, 0x46, 0x46, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "SFF RAMP    xxx%"
+const static uint16_t msg_ramp_rhu8[16]                 = {0x4d, 0x45, 0x5a, 0x5a, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "MEZZ RAMP   xxx%"
+
+
+const static uint16_t *lcd_status_messages[22] = {msg_pre_startup
                                                   , msg_startup
                                                   , msg_init_ok
                                                   , msg_delay_startup_fail_therm
@@ -47,7 +57,16 @@ const static uint16_t *lcd_status_messages[14] = {msg_pre_startup
                                                   , msg_preinit_fail_bad_read
                                                   , msg_init_bad_48v
                                                   , msg_fail_overheat_rhu_not_on
-                                                  , msg_ramp_fail};
+                                                  , msg_ramp_fail
+                                                  , msg_ramp_rhu1
+                                                  , msg_ramp_rhu2
+                                                  , msg_ramp_rhu3
+                                                  , msg_ramp_rhu4
+                                                  , msg_ramp_rhu5
+                                                  , msg_ramp_rhu6
+                                                  , msg_ramp_rhu7
+                                                  , msg_ramp_rhu8
+                                                    };
 
 static uint16_t msg_rhu_1[16] = {0x43, 0x50, 0x55, 0x31, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x2E, 0x78, 0x43}; 					// RHU 1 INFO CPU1               "CPU1       xx.xC"
 static uint16_t msg_rhu_2[16] = {0x43, 0x50, 0x55, 0x32, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x2E, 0x78, 0x43}; 					// RHU 2 INFO CPU2               "CPU2       xx.xC"
@@ -72,6 +91,35 @@ void LcdPostStatic(uint16_t msg_)
 #endif
 	LcdPostMsgTop(msg_);
 	screen_update = 1;
+}
+
+void LcdPostStaticRamp(uint16_t msg_, uint16_t val_){
+    //Input should be less than
+    ASSERT(val <= 100);
+
+    int i = 0;
+    while(i < 16)
+    {
+        switch(i){
+        case 12:
+            if (val_ < 100) top_row[i] = 0x20;                    //space
+            else top_row[i] = 0x31;                              //1
+            break;
+        case 13:{
+            if (val_ >= 10 ) top_row[i] = 0x30 + ((val_/10) % 10); //ten column
+            else top_row[i] = 0x20;                              //space
+            break;
+        }
+        case 14:{
+            top_row[i] = 0x30 + (val_ % 10);                                 //digits
+            break;
+        }
+        default:top_row[i] = (lcd_status_messages[msg_])[i];
+        }
+        i++;
+    }
+
+    screen_update = 1;
 }
 
 void LcdPostModal(uint16_t msg_)

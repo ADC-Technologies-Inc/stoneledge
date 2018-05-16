@@ -322,6 +322,9 @@ void CTL_Init(void){
             #ifdef DEBUG_CTL
             printf("CTL_Init():: RHU %d at Full Power, moving on\n", rhu );
             #endif
+
+            LcdPostStaticRamp( RAMP_RHU1+rhu, RHU_GetSetDuty(rhu)/100 );
+
             rhu++;
             break;
         }
@@ -348,9 +351,12 @@ void CTL_Init(void){
             #ifdef DEBUG_CTL
             printf("CTL_Init():: RHU %d Ramp OK, present duty = %d\n", rhu, ramp_ret );
             #endif
-
             ASSERT( ramp_ret >= 0 );
+
+            LcdPostStaticRamp( RAMP_RHU1+rhu, ramp_ret/100 );
         }
+
+        //Post ramping message
 
         if ( ramp_ret > MIN_DUTY_TOCHECK_CYCLE ){
             //Check the RHU is powered, this will halt if there's an issue

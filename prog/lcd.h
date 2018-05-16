@@ -17,6 +17,7 @@
 #include "temps.h"
 
 void LcdPostStatic(uint16_t msg_);
+void LcdPostStaticRamp(uint16_t msg_, uint16_t val_);
 void LcdPostModal(uint16_t msg_);
 void IncrementLcdCycleMsg(void);
 void LcdWritePower(uint16_t watts_);

@@ -42,6 +42,14 @@
 #define     INIT_BAD_48V                11
 #define     FAIL_OVERHEAT_RHU_NOT_ON    12
 #define     FAIL_RAMP                   13
+#define     RAMP_RHU1                   14
+#define     RAMP_RHU2                   15
+#define     RAMP_RHU3                   16
+#define     RAMP_RHU4                   17
+#define     RAMP_RHU5                   18
+#define     RAMP_RHU6                   19
+#define     RAMP_RHU7                   20
+#define     RAMP_RHU8                   21
 
 // RHUs
 
@@ -96,7 +104,7 @@
 // Enables
 
 //#define 	USE_ETHERNET 	1						// uncomment to bring ethernet online (not ready)
-#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
+//#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
 													// new duty cycles settings are 0, 5%, 7.5%, 10%
 #define     IGNORE_48VFUSE  1                         // uncomment to ignore a disconnected 48v fuse
 

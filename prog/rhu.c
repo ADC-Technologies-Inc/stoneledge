@@ -164,6 +164,10 @@ void RHU_VerifyRHU(uint16_t fail_msg_)
 	}
 }
 
+uint16_t RHU_GetSetDuty(uint16_t rhu_){
+    return rhu_state[rhu_].duty;
+}
+
 void RHU_EnableRHU(uint16_t rhu_)
 {
     #ifdef DEBUG_RHU
