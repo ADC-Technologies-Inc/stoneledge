@@ -11,7 +11,6 @@
  */
 
 #include "LED.h"
-#include "stdio.h"
 #include "DSP2803x_Examples.h"
 #include "ntd_debug.h"
 

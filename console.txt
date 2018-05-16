@@ -1,0 +1,141 @@
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+CTL_Enter():: Turning off 48v sub-system
+RHU_Disable48V():: Clearing GPIO40
+CTL_Enter():: Initializing External GPIO
+CTL_Enter():: Initializing RHU code and disabling RHU
+RHU_Init():: RHU 0 duty switches read 0
+RHU_Init():: RHU 1 duty switches read 0
+RHU_Init():: RHU 2 duty switches read 0
+RHU_Init():: RHU 3 duty switches read 0
+RHU_Init():: RHU 4 duty switches read 1
+RHU_Init():: RHU 5 duty switches read 0
+RHU_Init():: RHU 6 duty switches read 0
+RHU_Init():: RHU 7 duty switches read 0
+RHU_DisableRHU():: Disabling RHU 0
+PWM_SetDuty():: Setting channel 0 to 0
+RHU_DisableRHU():: Disabling RHU 1
+PWM_SetDuty():: Setting channel 1 to 0
+RHU_DisableRHU():: Disabling RHU 2
+PWM_SetDuty():: Setting channel 2 to 0
+RHU_DisableRHU():: Disabling RHU 3
+PWM_SetDuty():: Setting channel 3 to 0
+RHU_DisableRHU():: Disabling RHU 4
+PWM_SetDuty():: Setting channel 4 to 0
+RHU_DisableRHU():: Disabling RHU 5
+PWM_SetDuty():: Setting channel 5 to 0
+RHU_DisableRHU():: Disabling RHU 6
+PWM_SetDuty():: Setting channel 6 to 0
+RHU_DisableRHU():: Disabling RHU 7
+PWM_SetDuty():: Setting channel 7 to 0
+CTL_Enter():: Initializing LCD
+CTL_Enter():: Doing LED sweep
+CTL_Enter():: Initializing SysID to 00000000
+CTL_Enter():: Initializing Analog PTC code
+CTL_Enter():: Initializing current code
+CTL_Enter():: Initializing ADC Mux code
+CTL_Enter():: Entering PreInit phase
+CTL_PreInit():: Enabling Analog ISRs (ePWM4)
+CTL_PreInit():: Pausing for 5 seconds while temps are collected
+CTL_PreInit():: Processing Temp Data returned TEMPS_OK
+CTL_PreInit():: Entering Init Phase
+CTL_Init():: Posting STARTUP Message
+RHU_Get48VFuse():: Returning 48V Fuse (GPIO40) state as 1
+CTL_Init():: Enabling 48v system
+RHU_Enable48V():: Setting GPIO40 ON
+C28xx: Error: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -1135 @ 0x3EBCC4) The debug probe reported an error. Confirm debug probe configuration and connections, reset the debug probe, and retry the operation. (Emulation package 7.0.188.0) 
+C28xx: Unable to determine target status after 20 attempts
+C28xx: Failed to remove the debug state from the target before disconnecting.  There may still be breakpoint op-codes embedded in program memory.  It is recommended that you reset the emulator before you connect and reload your program before you continue debugging
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+C28xx: Error: (Error -1135 @ 0x897B) The debug probe reported an error. Confirm debug probe configuration and connections, reset the debug probe, and retry the operation. (Emulation package 7.0.188.0) 
+C28xx: Unable to determine target status after 20 attempts
+C28xx: Failed to remove the debug state from the target before disconnecting.  There may still be breakpoint op-codes embedded in program memory.  It is recommended that you reset the emulator before you connect and reload your program before you continue debugging
+C28xx: Error occurred during flash operation: Could not read 0x0000800A@Data: target is not connected
+C28xx: Error occurred during flash operation: Could not write 0x00008008@Data: target is not connected
+C28xx: Error occurred during flash operation: Could not write 0x00008007@Data: target is not connected
+C28xx: Error occurred during flash operation: Failed to run target while trying to execute FlashAPIInterface2803xV1_00.out
+C28xx: Error occurred during flash operation: CPU Reset error. The requested reset was aborted.
+C28xx: Error occurred during flash operation: Could not read 0x00000AEF@Data: target is not connected
+C28xx: Error occurred during flash operation: Could not read 0x00007020@Data: target is not connected
+C28xx: Error occurred during flash operation: Could not write 0x00007020@Data: target is not connected
+C28xx: Error occurred during flash operation: Could not write 0x08AA7@Program: target is not connected
+C28xx: Flash Programmer: Error encountered when writing to flash memory
+C28xx: File Loader: Memory write failed: Unknown error
+C28xx: GEL: File: C:\CCS Workspace\stoneledge\Debug\stoneledge.out: Load failed.
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+CTL_Enter():: Turning off 48v sub-system
+RHU_Disable48V():: Clearing GPIO40
+CTL_Enter():: Initializing External GPIO
+CTL_Enter():: Initializing RHU code and disabling RHU
+RHU_Init():: RHU 0 duty switches read 0
+RHU_Init():: RHU 1 duty switches read 0
+RHU_Init():: RHU 2 duty switches read 0
+RHU_Init():: RHU 3 duty switches read 0
+RHU_Init():: RHU 4 duty switches read 1
+RHU_Init():: RHU 5 duty switches read 0
+RHU_Init():: RHU 6 duty switches read 0
+RHU_Init():: RHU 7 duty switches read 0
+RHU_DisableRHU():: Disabling RHU 0
+PWM_SetDuty():: Setting channel 0 to 0
+RHU_DisableRHU():: Disabling RHU 1
+PWM_SetDuty():: Setting channel 1 to 0
+RHU_DisableRHU():: Disabling RHU 2
+PWM_SetDuty():: Setting channel 2 to 0
+RHU_DisableRHU():: Disabling RHU 3
+PWM_SetDuty():: Setting channel 3 to 0
+RHU_DisableRHU():: Disabling RHU 4
+PWM_SetDuty():: Setting channel 4 to 0
+RHU_DisableRHU():: Disabling RHU 5
+PWM_SetDuty():: Setting channel 5 to 0
+RHU_DisableRHU():: Disabling RHU 6
+PWM_SetDuty():: Setting channel 6 to 0
+RHU_DisableRHU():: Disabling RHU 7
+PWM_SetDuty():: Setting channel 7 to 0
+CTL_Enter():: Initializing LCD
+CTL_Enter():: Doing LED sweep
+CTL_Enter():: Initializing SysID to 00000000
+CTL_Enter():: Initializing Analog PTC code
+CTL_Enter():: Initializing current code
+CTL_Enter():: Initializing ADC Mux code
+CTL_Enter():: Entering PreInit phase
+CTL_PreInit():: Enabling Analog ISRs (ePWM4)
+CTL_PreInit():: Pausing for 5 seconds while temps are collected
+CTL_PreInit():: Processing Temp Data returned TEMPS_OK
+CTL_PreInit():: Entering Init Phase
+CTL_Init():: Posting STARTUP Message
+RHU_Get48VFuse():: Returning 48V Fuse (GPIO40) state as 1
+CTL_Init():: Enabling 48v system
+RHU_Enable48V():: Setting GPIO40 ON
+C28xx: Error: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -2134 @ 0x0) Unable to control device execution state. Reset the device, and retry the operation. If error persists, confirm configuration, power-cycle the board, and/or try more reliable JTAG settings (e.g. lower TCLK). (Emulation package 7.0.188.0) 
+C28xx: Trouble Halting Target CPU: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error connecting to the target: (Error -267 @ 0x0) The controller could not detect valid target supply. Check target JTAG connection and/or connection setting specifying voltage level. (Emulation package 7.0.188.0) 
+C28xx: Error connecting to the target: (Error -267 @ 0x0) The controller could not detect valid target supply. Check target JTAG connection and/or connection setting specifying voltage level. (Emulation package 7.0.188.0) 
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+C28xx: Error: (Error -1041 @ 0x0) The debug probe reported an error. Confirm debug probe configuration and connections, reset the debug probe, and retry the operation. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -2134 @ 0x0) Unable to control device execution state. Reset the device, and retry the operation. If error persists, confirm configuration, power-cycle the board, and/or try more reliable JTAG settings (e.g. lower TCLK). (Emulation package 7.0.188.0) 
+C28xx: Trouble Halting Target CPU: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -2134 @ 0x0) Unable to control device execution state. Reset the device, and retry the operation. If error persists, confirm configuration, power-cycle the board, and/or try more reliable JTAG settings (e.g. lower TCLK). (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -2134 @ 0x0) Unable to control device execution state. Reset the device, and retry the operation. If error persists, confirm configuration, power-cycle the board, and/or try more reliable JTAG settings (e.g. lower TCLK). (Emulation package 7.0.188.0) 
+C28xx: Trouble Halting Target CPU: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -2134 @ 0x0) Unable to control device execution state. Reset the device, and retry the operation. If error persists, confirm configuration, power-cycle the board, and/or try more reliable JTAG settings (e.g. lower TCLK). (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -2134 @ 0x0) Unable to control device execution state. Reset the device, and retry the operation. If error persists, confirm configuration, power-cycle the board, and/or try more reliable JTAG settings (e.g. lower TCLK). (Emulation package 7.0.188.0) 
+C28xx: Trouble Halting Target CPU: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -2134 @ 0x0) Unable to control device execution state. Reset the device, and retry the operation. If error persists, confirm configuration, power-cycle the board, and/or try more reliable JTAG settings (e.g. lower TCLK). (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Power Failure on Target CPU 
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+C28xx: Can't Run Target CPU: (Error -1156 @ 0x800) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 
+C28xx: Error occurred during flash operation: Timed out waiting for target to halt while executing FlashAPIInterface2803xV1_00.out
+C28xx: Flash operation timed out waiting for the algorithm to complete. Operation cancelled.
+C28xx: File Loader: Memory write failed: Unknown error
+C28xx: GEL: File: C:\CCS Workspace\stoneledge\Release\stoneledge.out: Load failed.
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+C28xx: Flash Programmer: Warning: The configured device (TMS320F28034), does not match the detected device (TMS320F28035). Flash Programming operations could be affected. Please consider modifying your target configuration file.
+C28xx: Error: (Error -1041 @ 0x0) The debug probe reported an error. Confirm debug probe configuration and connections, reset the debug probe, and retry the operation. (Emulation package 7.0.188.0) 
+C28xx: Error: (Error -1156 @ 0x0) Device may be operating in low-power mode. Do you want to bring it out of this mode? Choose 'Yes' to force the device to wake up and retry the operation. Choose 'No' to retry the operation without waking the device. (Emulation package 7.0.188.0) 

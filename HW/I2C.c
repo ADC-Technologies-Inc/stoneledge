@@ -6,8 +6,6 @@
  */
 #include "../HW/I2C.h"
 
-#define I2C_DEBUG
-
 #include "../prog/ntd_debug.h"
 #include "DSP28x_Project.h"
 #include "DSP2803x_Examples.h"

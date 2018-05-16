@@ -32,6 +32,8 @@ void ProcessCurrentSet(uint16_t set_)
 
 uint32_t GetCurrentData(void)
 {
+    double Amps;
+
 	avgCurrentCalc  = avgCurrentArray[0];
 	avgCurrentCalc += avgCurrentArray[1];
 	avgCurrentCalc += avgCurrentArray[2];
@@ -49,6 +51,11 @@ uint32_t GetCurrentData(void)
 	avgCurrentCalc += avgCurrentArray[14];
 	avgCurrentCalc += avgCurrentArray[15];
 	avgCurrentCalc /= 16;
+
+	//3.5 figure is bothersome! - this is incredibly inaccurate because of it
+	//Amps = (4096/0.175)*((double) avgCurrentCalc/3.5);
+	//avgCurrentCalc = (uint32_t)(Amps * 10);
+
 
 	avgCurrentCalc *= 10; 					// values used to convert ADC counts to amps * 10
 	avgCurrentCalc /= 217; 					//

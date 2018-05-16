@@ -156,13 +156,17 @@
 ////////////////////////////////////////
 //  DEBUG SWITCHES
 ////////////////////////////////////////
-#ifndef DEBUG
-#define DEBUG                                       //if DEBUG is set the ASSERT macro in ntd_debug.h are operational, otherwise they do nothing
-#endif
 
-#define DEBUG_CTL                       1           //ctl.c
-#define DEBUG_RHU                       1           //RHU.c
-#define DEBUG_PWM                       1           //PWM.c
+//DEBUG needs to be defined if any of the DEBUG_xxx defines are defined
+//#ifndef DEBUG
+//#define DEBUG                                       //if DEBUG is set the ASSERT macro in ntd_debug.h are operational
+//#endif
+
+
+//#define DEBUG_I2C                       1           //i2c.c
+//#define DEBUG_CTL                       1           //ctl.c
+//#define DEBUG_RHU                       1           //RHU.c
+//#define DEBUG_PWM                       1           //PWM.c
 //#define DEBUG_IOINIT                    1           //IOInit.c
 //#define DEBUG_LCD                       1           //LCD.c
 //#define DEBUG_LED                       1           //LED.c

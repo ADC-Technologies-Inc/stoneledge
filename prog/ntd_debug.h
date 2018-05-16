@@ -1,5 +1,8 @@
-#include "stdio.h"
 #include "prog_conf.h"
+
+#ifdef DEBUG
+#include "stdio.h"
+#endif
 
 #define PRINTF_BINSTR8 "%d%d%d%d%d%d%d%d"
 #define PRINTF_BINSTR8_ARGS(in_)\

@@ -144,7 +144,7 @@ void InitGpio_start(void)
 
 
 	   /////////////////////////////////////////////  EPWM6B
-       GpioCtrlRegs.GPAPUD.bit.GPIO10 = 1;   // Enable pullup on GPIO11
+       GpioCtrlRegs.GPAPUD.bit.GPIO10 = 1;   // Enable pullup on GPIO10
        GpioCtrlRegs.GPAMUX1.bit.GPIO10 = 1;  // GPIO11 = EPMW6A
        GpioCtrlRegs.GPADIR.bit.GPIO10 = 1;   // GPIO11 = output
 
