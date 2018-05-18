@@ -135,8 +135,8 @@
 
 #define 	AIR_TEMP_MAX_LIMIT 			700 		// temp value (c * 10) before error is thrown
 #define 	BOARD_TEMP_MAX_LIMIT 		700			// Board temp limit
-#define     RHU1_TEMP_MAX_LIMIT         800         // CPU1
-#define     RHU2_TEMP_MAX_LIMIT         800         // CPU2
+#define     RHU1_TEMP_MAX_LIMIT         900         // CPU1
+#define     RHU2_TEMP_MAX_LIMIT         900         // CPU2
 #define 	RHU_TEMP_MAX_LIMIT 			700         // All other RHUs
 
 

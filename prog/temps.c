@@ -326,31 +326,31 @@ int ProcessTempData(void)
 		err = 0;
         if(Temps[0]->max_temp > RHU1_TEMP_MAX_LIMIT)
         {
-            err |= 0x1;
+            err = 0x1;
         }
 
         if(Temps[1]->max_temp > RHU2_TEMP_MAX_LIMIT)
         {
-            err |= 0x2;
+            err += 0x2;
         }
 
         //Remaining RHUs
 	    for(i =2; i < RHU_COUNT; i++){
 	        if(Temps[i]->max_temp > RHU_TEMP_MAX_LIMIT){
-	            err |= ( 1 << i );
+	            err += ( 1 << i );
 	        }
 	    }
 
 	    //Board
 	    if(Temps[8]->max_temp > BOARD_TEMP_MAX_LIMIT)
 	    {
-	        err |= ( 1 << 8 );
+	        err += ( 1 << 8 );
 	    }
 
 	    //Air
 	    if(Temps[9]->max_temp > AIR_TEMP_MAX_LIMIT)
 	    {
-	        err |= ( 1 << 9 );
+	        err += ( 1 << 9 );
 	    }
 
 		return err;
