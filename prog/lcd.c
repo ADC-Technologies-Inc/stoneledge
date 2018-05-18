@@ -322,15 +322,7 @@ void UpdateRhuTempsLcd(void)
 	int i;
 
 	for (i = 0;i<9;i++){
-	    switch(i){
-	    case 0:
-	    case 1:{
-	        //TODO - here
-	        break;
-	    }
-	    default:
-	        LcdWriteTemp(GetTempDataSingle(i), i);
-	    }
+        LcdWriteTemp(GetTempDataSingle(i), i);
 	}
 }
 
