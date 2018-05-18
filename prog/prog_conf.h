@@ -156,7 +156,7 @@
 ////////////////////////////////////////
 //  WATCHDOG
 ////////////////////////////////////////
-#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail errors
+//#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail errors
 #define     RHU_WATCHDOG_DELAY          30000       //turn off each RHU for a minimum of 30s
 
 
