@@ -323,7 +323,7 @@ void CTL_Init(void){
             printf("CTL_Init():: RHU %d at Full Power, moving on\n", rhu );
             #endif
 
-            LcdPostStaticRamp( RAMP_RHU1+rhu, RHU_GetSetDuty(rhu)/100 );
+            LcdPostStaticRamp( RAMP_RHU1+rhu, RHU_GetSetDutyPerc(rhu) );
 
             rhu++;
             break;
@@ -353,7 +353,7 @@ void CTL_Init(void){
             #endif
             ASSERT( ramp_ret >= 0 );
 
-            LcdPostStaticRamp( RAMP_RHU1+rhu, ramp_ret/100 );
+            LcdPostStaticRamp( RAMP_RHU1+rhu, ramp_ret );
         }
 
         //Post ramping message

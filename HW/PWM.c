@@ -76,6 +76,37 @@ void PWM_MapISR(void)
     EDIS;
 }
 
+/*
+ * Clocks are configured as follows (spruge9e.pdf)
+ *
+ * TBCLK = SYSCLKOUT / (HSPCLKDIV × CLKDIV)
+ *
+ * CLKDIV has the following values for the relevant setting
+ *
+ * Setting  Value
+ * 0        1
+ * 1        2
+ * 2        4
+ * 3        8
+ * 4        16
+ * 5        32
+ * 6        64
+ * 7        128
+ *
+ * HSPCLKDIV has the following values for the relevant settings
+ *
+ * Setting  Value
+ * 0        1
+ * 1        2
+ * 2        4
+ * 3        6
+ * 4        8
+ * 5        10
+ * 6        12
+ * 7        14
+ *
+ */
+
 void PWM_Init()
 {
 	PWM_DutyRegs[0] = &EPwm1Regs.CMPA.half.CMPA;
@@ -90,7 +121,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM1
    /////////////////////////////////
-   EPwm1Regs.TBPRD 					= 10000;			     	// Period = 1000 TBCLK counts
+   EPwm1Regs.TBPRD 					= 10000;			    // Period = 1000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	   	// with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm1Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm1Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts

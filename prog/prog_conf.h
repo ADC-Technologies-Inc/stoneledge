@@ -100,11 +100,10 @@
 #define 	AA 							03
 
 // Timing Settings
-
 // Enables
 
 //#define 	USE_ETHERNET 	1						// uncomment to bring ethernet online (not ready)
-//#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
+#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
 													// new duty cycles settings are 0, 5%, 7.5%, 10%
 #define     IGNORE_48VFUSE  1                         // uncomment to ignore a disconnected 48v fuse
 
@@ -166,13 +165,13 @@
 ////////////////////////////////////////
 
 //DEBUG needs to be defined if any of the DEBUG_xxx defines are defined
-//#ifndef DEBUG
-//#define DEBUG                                       //if DEBUG is set the ASSERT macro in ntd_debug.h are operational
-//#endif
+#ifndef DEBUG
+#define DEBUG                                       //if DEBUG is set the ASSERT macro in ntd_debug.h are operational
+#endif
 
 
-//#define DEBUG_I2C                       1           //i2c.c
-//#define DEBUG_CTL                       1           //ctl.c
+#define DEBUG_I2C                       1           //i2c.c
+#define DEBUG_CTL                       1           //ctl.c
 //#define DEBUG_RHU                       1           //RHU.c
 //#define DEBUG_PWM                       1           //PWM.c
 //#define DEBUG_IOINIT                    1           //IOInit.c

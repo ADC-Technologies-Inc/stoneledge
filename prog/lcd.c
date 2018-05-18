@@ -95,7 +95,7 @@ void LcdPostStatic(uint16_t msg_)
 
 void LcdPostStaticRamp(uint16_t msg_, uint16_t val_){
     //Input should be less than
-    ASSERT(val <= 100);
+    ASSERT(val_ <= 100);
 
     int i = 0;
     while(i < 16)

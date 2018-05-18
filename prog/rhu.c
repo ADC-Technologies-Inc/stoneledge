@@ -20,6 +20,10 @@ struct rhu_state__{
     uint32_t    wd_lastramp;
 };
 
+//defines to convert tick to percentages
+#define PERCCONV_DIV    100
+#define PERCCONV_MUL    100
+
 //===========================================================================
 // private variables
 //===========================================================================
@@ -164,8 +168,10 @@ void RHU_VerifyRHU(uint16_t fail_msg_)
 	}
 }
 
-uint16_t RHU_GetSetDuty(uint16_t rhu_){
-    return rhu_state[rhu_].duty;
+uint16_t RHU_GetSetDutyPerc(uint16_t rhu_){
+
+    //Convert into percentage and return
+    return rhu_state[rhu_].duty / PERCCONV_DIV;
 }
 
 void RHU_EnableRHU(uint16_t rhu_)
@@ -194,6 +200,8 @@ void RHU_EnableRHU(uint16_t rhu_)
  * RHU_ABORT                   //Error of some form, presently unused
  * RHU_DISABLED_BY_SWITCH      //Duty switch is off
  * RHU_DISABLED                //Disabled in software
+ *
+ * otherwise return is percentage of duty set
  *
  */
 int RHU_EnableRHU_RAMP(uint16_t rhu_){
@@ -249,7 +257,7 @@ int RHU_EnableRHU_RAMP(uint16_t rhu_){
     //Are we now at full power?
     if (rhu_state[rhu_].ramp == rhu_state[rhu_].duty) return RHU_FULLPOWER;
 
-    return rhu_state[rhu_].ramp;
+    return rhu_state[rhu_].ramp / PERCCONV_DIV;
 }
 
 void RHU_DisableRHU(uint16_t rhu_)
