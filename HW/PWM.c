@@ -105,7 +105,26 @@ void PWM_MapISR(void)
  * 6        12
  * 7        14
  *
+ *  SYSCLKOUT   CLKDIV  HSPCLKDIV   TBCLK       TBCLK Period    TBPRD   Time        Freq
+ *  60,000,000  1       4           15,000,000  6.67E-08        10,000  6.67E-04    1500.00
+ *  60,000,000  4       2           7,500,000   1.33E-07        10,000  1.33E-03    750.00
+ *  60,000,000  4       4           3,750,000   2.67E-07        10,000  2.67E-03    375.00
+ *  60,000,000  4       6           2,500,000   4.00E-07        10,000  4.00E-03    250.00
+ *  60,000,000  4       8           1,875,000   5.33E-07        10,000  5.33E-03    187.50
+ *  60,000,000  8       10          750,000     1.33E-06        10,000  1.33E-02    75.00
+ *  60,000,000  16      12          312,500     3.20E-06        10,000  3.20E-02    31.25
+ *  60,000,000  64      14          66,964      1.49E-05        10,000  1.49E-01    6.70
+ *  60,000,000  128     12          39,063      2.56E-05        10,000  2.56E-01    3.91
+ *  60,000,000  128     14          33,482      2.99E-05        10,000  2.99E-01    3.35
+ *  60,000,000  128     10          46,875      2.13E-05        20,000  4.27E-01    2.34
+ *  60,000,000  128     14          33,482      2.99E-05        16,741  5.00E-01    2.00
+ *  60,000,000  128     14          33,482                      33,482              1.00
+ *
  */
+
+#define MOSFET_TBPRD        10000
+#define MOSFET_HSPCLKDIV    0x03
+#define MOSFET_CLKDIV       0x02
 
 void PWM_Init()
 {
@@ -121,7 +140,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM1
    /////////////////////////////////
-   EPwm1Regs.TBPRD 					= 10000;			    // Period = 1000 TBCLK counts
+   EPwm1Regs.TBPRD 					= MOSFET_TBPRD;			// Period = 1000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	   	// with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm1Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm1Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -132,8 +151,8 @@ void PWM_Init()
    EPwm1Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
    EPwm1Regs.TBCTL.bit.PHSDIR        = 1;                    // Count up after sync
    EPwm1Regs.TBCTL.bit.SYNCOSEL 	= TB_CTR_ZERO;			// output sync pulse when counter == 0
-   EPwm1Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
-   EPwm1Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
+   EPwm1Regs.TBCTL.bit.HSPCLKDIV 	= MOSFET_HSPCLKDIV;		// TBCLK = SYSCLK/24
+   EPwm1Regs.TBCTL.bit.CLKDIV 		= MOSFET_CLKDIV;		// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm1Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
    EPwm1Regs.CMPCTL.bit.SHDWBMODE 	= CC_SHADOW;			// shadow update for B
    EPwm1Regs.CMPCTL.bit.LOADAMODE 	= CC_CTR_ZERO; 			// load [new duty cycle from shadow register] on CTR = zero
@@ -150,7 +169,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM2
    /////////////////////////////////
-   EPwm2Regs.TBPRD 					= 10000;			    // Period = 1000 TBCLK counts
+   EPwm2Regs.TBPRD 					= MOSFET_TBPRD;			    // Period = 1000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	   	// with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm2Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm2Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -161,8 +180,8 @@ void PWM_Init()
    EPwm2Regs.TBCTL.bit.PHSDIR        = 1;                   // Count up after sync
    EPwm2Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
    EPwm2Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
-   EPwm2Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
-   EPwm2Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
+   EPwm2Regs.TBCTL.bit.HSPCLKDIV 	= MOSFET_HSPCLKDIV;		// TBCLK = SYSCLK/24
+   EPwm2Regs.TBCTL.bit.CLKDIV 		= MOSFET_CLKDIV;		// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm2Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
    EPwm2Regs.CMPCTL.bit.SHDWBMODE 	= CC_SHADOW;			// shadow update for B
    EPwm2Regs.CMPCTL.bit.LOADAMODE 	= CC_CTR_ZERO; 			// load [new duty cycle from shadow register] on CTR = zero
@@ -174,7 +193,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM3
    /////////////////////////////////
-   EPwm3Regs.TBPRD 					= 10000;			    // Period = 10000 TBCLK counts
+   EPwm3Regs.TBPRD 					= MOSFET_TBPRD;			    // Period = 10000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	   	// with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm3Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm3Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -185,8 +204,8 @@ void PWM_Init()
    EPwm3Regs.TBCTL.bit.PHSDIR       = 1;                    // Count up after sync
    EPwm3Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
    EPwm3Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
-   EPwm3Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// TBCLK = SYSCLK/24
-   EPwm3Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
+   EPwm3Regs.TBCTL.bit.HSPCLKDIV 	= MOSFET_HSPCLKDIV;		// TBCLK = SYSCLK/24
+   EPwm3Regs.TBCTL.bit.CLKDIV 		= MOSFET_CLKDIV;		// Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm3Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
    EPwm3Regs.CMPCTL.bit.SHDWBMODE 	= CC_SHADOW;			// shadow update for B
    EPwm3Regs.CMPCTL.bit.LOADAMODE 	= CC_CTR_ZERO; 			// load [new duty cycle from shadow register] on CTR = zero
@@ -198,7 +217,7 @@ void PWM_Init()
    /////////////////////////////////
    //	ePWM6
    /////////////////////////////////
-   EPwm6Regs.TBPRD 					= 10000;			    // Period = 10000 TBCLK counts
+   EPwm6Regs.TBPRD 					= MOSFET_TBPRD;			    // Period = 10000 TBCLK counts
    	   	   	   	   	   	   	   	   	   	   	   	   	   	    // with 60MHz clock and 1/2 prescale this should set the PWM to 30KHz
    EPwm6Regs.CMPA.half.CMPA 		= 0;			 	  	// Compare A = 0 TBCLK counts
    EPwm6Regs.CMPB 					= 0;					// Compare B = 0 TBCLK counts
@@ -209,8 +228,8 @@ void PWM_Init()
    EPwm6Regs.TBCTL.bit.PHSDIR       = 1;                    // Count up after sync
    EPwm6Regs.TBCTL.bit.PRDLD 		= 0;			   		// Shadow mode (Immediate mode == 1)
    EPwm6Regs.TBCTL.bit.SYNCOSEL 	= TB_SYNC_IN;			// sync pulse input
-   EPwm6Regs.TBCTL.bit.HSPCLKDIV 	= 0x03;					// /8  TBCLK = SYSCLK/24
-   EPwm6Regs.TBCTL.bit.CLKDIV 		= 0x02;		 			// /4  Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
+   EPwm6Regs.TBCTL.bit.HSPCLKDIV 	= MOSFET_HSPCLKDIV;		// /8  TBCLK = SYSCLK/24
+   EPwm6Regs.TBCTL.bit.CLKDIV 		= MOSFET_CLKDIV;		// /4  Used for prescale ( TBCLK = SYSCLKOUT / ( HSPCLKDIV x CLKDIV ) )
    EPwm6Regs.CMPCTL.bit.SHDWAMODE 	= CC_SHADOW;			// shadow update for A
    EPwm6Regs.CMPCTL.bit.SHDWBMODE 	= CC_SHADOW;			// shadow update for B
    EPwm6Regs.CMPCTL.bit.LOADAMODE 	= CC_CTR_ZERO; 			// load [new duty cycle from shadow register] on CTR = zero
