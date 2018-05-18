@@ -123,8 +123,8 @@ void PWM_MapISR(void)
  */
 
 #define MOSFET_TBPRD        10000
-#define MOSFET_HSPCLKDIV    0x03
-#define MOSFET_CLKDIV       0x02
+#define MOSFET_HSPCLKDIV    0x07
+#define MOSFET_CLKDIV       0x07
 
 void PWM_Init()
 {
