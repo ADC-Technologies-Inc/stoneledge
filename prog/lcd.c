@@ -251,8 +251,8 @@ void LcdWriteMaxTemp(uint16_t temp_)
 void LcdWriteTemp(uint16_t temp_, uint16_t rhu_)
 {
     WriteTempToString(&lcd_rhu_messages[rhu_][11] , temp_ );
-    if ( rhu_ == CPU1) WriteTempToString(&lcd_rhu_messages[rhu_][6] , cpu1_temp );
-    if ( rhu_ == CPU2) WriteTempToString(&lcd_rhu_messages[rhu_][6] , cpu2_temp );
+    if ( rhu_ == CPU1) WriteTempToString(&lcd_rhu_messages[rhu_][5] , cpu1_temp );
+    if ( rhu_ == CPU2) WriteTempToString(&lcd_rhu_messages[rhu_][5] , cpu2_temp );
 
 /*	static int i;
 	static int started;

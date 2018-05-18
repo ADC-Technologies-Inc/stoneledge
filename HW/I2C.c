@@ -109,7 +109,7 @@ void I2C_Init(void)
     *
     */
    I2caRegs.I2CCLKL = 5;           // NOTE: must be non zero,
-   I2caRegs.I2CCLKH = 4;           // NOTE: must be non zero
+   I2caRegs.I2CCLKH = 5;           // NOTE: must be non zero
 
    I2caRegs.I2CIER.all = 0x00;
    I2caRegs.I2CIER.bit.SCD = 1;     //Stop Condition
@@ -208,6 +208,7 @@ void I2C_ResetBus(void){
     GpioDataRegs.GPBSET.bit.GPIO33 = 1;
     for (i=0;i<18;i++){
         GpioDataRegs.GPBTOGGLE.bit.GPIO33 = 1;
+        DELAY_US(5000);
     }
 
     EALLOW;
@@ -218,14 +219,14 @@ void I2C_ResetBus(void){
     DELAY_US(20);
 }
 
-#ifdef I2C_DEBUG
+#ifdef DEBUG_I2C
 #define I2C_WAITFOR(flag_, MSG_)\
     times_round = 0;\
     for(;;){\
         if (flag_) break;\
         if (times_round++ > 10000) {\
             printf(MSG_);\
-            CheckI2CHold();\
+            I2C_ResetBus();\
             retry++;\
             tx_flag=rx_flag=0;\
             goto re_enter;\
@@ -237,7 +238,7 @@ void I2C_ResetBus(void){
     for(;;){\
         if (flag_) break;\
         if (times_round++ > 10000) {\
-            CheckI2CHold();\
+            I2C_ResetBus();\
             tx_flag=rx_flag=0;\
             retry++;\
             goto re_enter;\
@@ -310,7 +311,7 @@ re_enter:
 
     if ( fail_flag ){
         if (retry==3){
-            #ifdef I2C_DEBUG
+            #ifdef DEBUG_I2C
             printf("I2C_Tx():: Too many retries\n");
             #endif
             goto exit_;
