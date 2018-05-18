@@ -9,7 +9,7 @@
 #include "../prog/ntd_debug.h"
 #include "DSP28x_Project.h"
 #include "DSP2803x_Examples.h"
-
+#include "../prog/time.h"
 
 #define I2CMDR_NACKMOD  0x8000
 #define I2CMDR_FREE     0x4000
@@ -24,8 +24,10 @@
 #define I2CMDR_STB      0x0010
 #define I2CMDR_FDF      0x0008
 
-
+void CheckI2CHold(void);
+void I2C_ResetBus(void);
 __interrupt void I2C_ISR(void);
+
 static uint16_t rx_flag = 0;
 static uint16_t tx_flag = 0;
 static uint16_t fail_flag = 0;
@@ -79,9 +81,35 @@ void I2C_Init(void)
    I2caRegs.I2CMDR.bit.IRS = 0;     // Reset I2C
 
    //Clocks set to be within spec and target ~100kHz; (7,8,4 ~= 95kHz), (7, 20, 10) ~= 50kHz
+
+   /*
+    *   page 14, SPRUFZ9D.pdf
+    *   Module clock [Tmod] = (I2C Input Freq) / (IPSC + 1)
+    */
    I2caRegs.I2CPSC.bit.IPSC = 7;    // Prescaler - need 7-12 Mhz on module clk (SYSCLKOUT is set to 60MHz in FlashConfig.); 60/(7+1) = 7.5Mhz;
-   I2caRegs.I2CCLKL = 20;           // NOTE: must be non zero,
-   I2caRegs.I2CCLKH = 10;           // NOTE: must be non zero
+
+   /*
+    *   Master clock (bus clock) = ((IPSC + 1) * [(ICCL +5) + (ICCH + 5)]) / [I2C Input Freq.]
+    *
+        IPSC    ICCL    ICCH        Module Clock    Master Clock Period Master Clock Freq
+        7   20  10      7,500,000   5.33E-06        187,500
+        7   20  20      7,500,000   6.67E-06        150,000
+        7   30  30      7,500,000   9.33E-06        107,143
+        7   40  40      7,500,000   1.20E-05        83,333
+        7   50  50      7,500,000   1.47E-05        68,182
+        7   100 100     7,500,000   2.80E-05        35,714
+        7   150 150     7,500,000   4.13E-05        24,194
+        7   5   5       7,500,000   2.67E-06        375,000
+        7   5   10      7,500,000   3.33E-06        300,000
+        7   5   15      7,500,000   4.00E-06        250,000
+        7   10  10      7,500,000   4.00E-06        250,000
+
+
+    *
+    *
+    */
+   I2caRegs.I2CCLKL = 30;           // NOTE: must be non zero,
+   I2caRegs.I2CCLKH = 30;           // NOTE: must be non zero
 
    I2caRegs.I2CIER.all = 0x00;
    I2caRegs.I2CIER.bit.SCD = 1;     //Stop Condition
@@ -111,17 +139,134 @@ void I2C_Init(void)
    return;
 }
 
+void CheckI2CHold(void)
+{
+    static uint32_t i;
+    static uint16_t j;
+    j = 0;
+    // set gpio for data to input
+    // set gpio for clock to output
+    EALLOW;
+    // GPIO32 - SDA
+    GpioCtrlRegs.GPBPUD.bit.GPIO32 = 1;    // Enable pull-up for GPIO28 (SDAA)
+    GpioCtrlRegs.GPBDIR.bit.GPIO32 = 0;    // input
+    GpioCtrlRegs.GPBMUX1.bit.GPIO32 = 0;   // Configure GPIO28 for GPIO operation
+    EDIS;
+    if(GpioDataRegs.GPBDAT.bit.GPIO32 == 0)
+    {
+        EALLOW;
+        // GPIO33 - SCL
+        GpioCtrlRegs.GPBPUD.bit.GPIO33 = 1;     // Enable pull-up for GPIO29 (SCLA)
+        GpioDataRegs.GPBSET.bit.GPIO33 = 1;     // set high
+        GpioCtrlRegs.GPBDIR.bit.GPIO33 = 1;     // output
+        GpioCtrlRegs.GPBMUX1.bit.GPIO33 = 0;    // Configure GPIO29 for GPIO operation
+        EDIS;
+        // while data is low cycle clock
+
+        //while(GpioDataRegs.GPBDAT.bit.GPIO32 == 0)
+        while(j < 10)
+        {
+            i = time_ms;
+            GpioDataRegs.GPBCLEAR.bit.GPIO33 = 1;
+            // delay for 5 ms
+            while(i + 1 > time_ms)
+            {
+                asm(" NOP");
+            }
+            GpioDataRegs.GPBSET.bit.GPIO33 = 1;
+            while(i + 2 > time_ms)
+            {
+                asm(" NOP");
+            }
+            j++;
+        }
+    }
+
+    // set gpio for data back to i2c
+    // set gpio for clock back to i2c
+    EALLOW;
+    // GPIO32 - SDA
+    GpioCtrlRegs.GPBPUD.bit.GPIO32 = 0;    // Enable pull-up for GPIO28 (SDAA)
+    GpioCtrlRegs.GPBQSEL1.bit.GPIO32 = 3;  // Asynch input GPIO28 (SDAA)
+    GpioCtrlRegs.GPBMUX1.bit.GPIO32 = 1;   // Configure GPIO28 for SDAA operation
+
+    // GPIO33 - SCL
+    GpioCtrlRegs.GPBPUD.bit.GPIO33 = 0;    // Enable pull-up for GPIO29 (SCLA)
+    GpioCtrlRegs.GPBQSEL1.bit.GPIO33 = 3;  // Asynch input GPIO29 (SCLA)
+    GpioCtrlRegs.GPBMUX1.bit.GPIO33 = 1;   // Configure GPIO29 for SCLA operation
+    EDIS;
+}
+
+void I2C_ResetBus(void){
+    uint16_t i = 0;
+
+    //Reset clock.data lines as GPIO
+    #ifdef I2C_DEBUG
+    printf("I2C_ResetBus():: Bus Reset\n");
+    #endif
+
+    EALLOW;
+    GpioCtrlRegs.GPBMUX1.bit.GPIO32 = 0;    //SDA
+    GpioCtrlRegs.GPBMUX1.bit.GPIO33 = 0;    //SCL
+    EDIS;
+
+    //Send 9 clocks down the line to reset
+    GpioDataRegs.GPBSET.bit.GPIO33 = 1;
+    for (i=0;i<18;i++){
+        GpioDataRegs.GPBTOGGLE.bit.GPIO33 = 1;
+    }
+
+    EALLOW;
+    GpioCtrlRegs.GPBMUX1.bit.GPIO32 = 1;    //SDA
+    GpioCtrlRegs.GPBMUX1.bit.GPIO33 = 1;    //SCL
+    EDIS;
+
+    DELAY_US(20);
+}
+
+#ifdef I2C_DEBUG
+#define I2C_WAITFOR(flag_, MSG_)\
+    times_round = 0;\
+    for(;;){\
+        if (flag_) break;\
+        if (times_round++ > 1000) {\
+            printf(MSG_);\
+            I2C_ResetBus();\
+            retry++;\
+            tx_flag=rx_flag=0;\
+            goto re_enter;\
+        }\
+    }
+#else
+#define I2C_WAITFOR(flag_, MSG_)\
+    times_round = 0;\
+    for(;;){\
+        if (flag_) break;\
+        if (times_round++ > 1000) {\
+            I2C_ResetBus();\
+            tx_flag=rx_flag=0;\
+            retry++;\
+            goto re_enter;\
+        }\
+    }
+#endif
+
 void I2C_Tx(uint16_t *buf_, uint16_t count_, uint16_t addr_)
 {
 //    printf("i2c_tx():: count= %d; addr_= %d\n", count_, addr_);
+    uint16_t times_round = 0;
     int retry = 0;
     uint16_t tempIER = 0;
+
+    //CheckI2CHold();
 
 re_enter:
 
     DINT;                           //disable interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
 
     ASSERT( !tx_flag && !rx_flag);  //neither of these should be possible as i2c has the highest priority due to the MUX
+
+    //I2C_WAITFOR((!I2caRegs.I2CSTR.bit.BB), "I2C_Tx():: Resetting bus waiting for bus\n");
 	while(I2caRegs.I2CSTR.bit.BB ); //Wait for bus and device to be available
 
 	//Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
@@ -153,9 +298,21 @@ re_enter:
 	I2caRegs.I2CMDR.all |= I2CMDR_STT | I2CMDR_TRX | I2CMDR_STP | I2CMDR_MST | I2CMDR_FREE;
 	//I2caRegs.I2CMDR.all = 0x6E20;
 
+	//I2C_WAITFOR(!(tx_flag), "I2C_Tx():: Resetting bus waiting for tx_flag\n");
 	for(;;){
 	    if (!tx_flag) break;
 	}
+    times_round = 0;
+    for(;;){
+        if (!tx_flag) break;
+        if (times_round++ > 1000) {
+            printf("I2C_Tx():: Resetting bus waiting for tx_flag\n");
+            I2C_ResetBus();
+            retry++;
+            tx_flag=rx_flag=0;
+            goto re_enter;
+        }
+    }
 
     if ( fail_flag ){
         if (retry==3){
@@ -182,13 +339,17 @@ void I2C_Rx(uint16_t * buf, uint16_t count, uint16_t loc, uint16_t addr_)
 {
     //printf("i2c_rx():: count= %d; addr_= %d\n", count, addr_);
     int retry = 0;
+    uint16_t times_round = 0;
     uint16_t tempIER = 0;
+
+    //CheckI2CHold();
 
 re_enter:
 
     DINT;       //disable group 3 interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
 
     ASSERT( !tx_flag && !rx_flag);
+    //I2C_WAITFOR((!I2caRegs.I2CSTR.bit.BB), "I2C_Rx():: Resetting bus waiting for bus\n");
     while(I2caRegs.I2CSTR.bit.BB  ); //Wait for bus and device to be available
 
     //Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
@@ -212,6 +373,18 @@ re_enter:
     I2caRegs.I2CMDR.all |= I2CMDR_STT | I2CMDR_TRX | I2CMDR_MST | I2CMDR_FREE;
 	//I2caRegs.I2CMDR.all = 0x2620;					// start condition, I2C master mode, TRX mode, enable I2C
 
+    /*times_round = 0;
+    for(;;){
+        if (rxready) break;
+        if (times_round++ > 1000) {
+            printf("I2C_Rx():: Resetting bus waiting for rxready\n");
+            I2C_ResetBus();
+            retry++;
+            tx_flag=rx_flag=0;
+            goto re_enter;
+        }
+    }*/
+//    I2C_WAITFOR(rxready, "I2C_Rx():: Resetting bus waiting for rxready\n");
 	for(;;){
 		if(rxready) break;
 	}
@@ -222,6 +395,18 @@ re_enter:
     //I2caRegs.I2CMDR.all = 0x2C20;					// Send restart as master receiver stop bit
     //I2caRegs.I2CMDR.bit.STB
 
+    /*times_round = 0;
+    for(;;){
+        if (rxready) break;
+        if (times_round++ > 1000) {
+            printf("Resetting bus waiting for rx_flag\n");
+            I2C_ResetBus();
+            retry++;
+            tx_flag=rx_flag=0;
+            goto re_enter;
+        }
+    }*/
+    //I2C_WAITFOR( (!rx_flag) , "I2C_Rx():: Resetting bus waiting for rx_flag\n");
     for(;;){
         if (!rx_flag) break;
     }

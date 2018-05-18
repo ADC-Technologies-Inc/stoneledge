@@ -66,7 +66,7 @@ void RHU_DisableRHU(uint16_t rhu_);
 int RHU_EnableRHU_RAMP(uint16_t rhu_);
 
 //Helper to let the RAMP message be accurate at 100%
-uint16_t RHU_GetSetDuty(uint16_t rhu_);
+uint16_t RHU_GetSetDutyPerc(uint16_t rhu_);
 
 
 //Emergency Stop, brings down 48V and all RHUs
