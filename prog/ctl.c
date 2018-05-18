@@ -381,16 +381,16 @@ void CTL_Init(void){
         case -1: {printf("CTL_Init():: Processing Temp Data returned NOT_READY\n" ); break;}
         case 0: {printf("CTL_Init():: Processing Temp Data returned TEMPS_OK\n" ); break;}
         default:{
-                if (ret & 0x1) printf("CTL_Init():: Processing Temp Data returned CPU1 overheat\n" );
-                if (ret & 0x2) printf("CTL_Init():: Processing Temp Data returned CPU2 overheat\n" );
-                if (ret & 0x4) printf("CTL_Init():: Processing Temp Data returned MISC overheat\n" );
-                if (ret & 0x8) printf("CTL_Init():: Processing Temp Data returned RAM overheat\n" );
-                if (ret & 0x10) printf("CTL_Init():: Processing Temp Data returned DIMM_GRP overheat\n" );
-                if (ret & 0x20) printf("CTL_Init():: Processing Temp Data returned M_2_GRP overheat\n" );
-                if (ret & 0x40) printf("CTL_Init():: Processing Temp Data returned SFF_GRP overheat\n" );
-                if (ret & 0x80) printf("CTL_Init():: Processing Temp Data returned MEZZ overheat\n" );
-                if (ret & 0x100) printf("CTL_Init():: Processing Temp Data returned BOARD overheat\n" );
-                if (ret & 0x200) printf("CTL_Init():: Processing Temp Data returned AIR overheat\n" );
+                if ((ret & 0x1)) printf("CTL_Init():: Processing Temp Data returned CPU1 overheat\n" );
+                if ((ret & 0x2)) printf("CTL_Init():: Processing Temp Data returned CPU2 overheat\n" );
+                if ((ret & 0x4)) printf("CTL_Init():: Processing Temp Data returned MISC overheat\n" );
+                if ((ret & 0x8)) printf("CTL_Init():: Processing Temp Data returned RAM overheat\n" );
+                if ((ret & 0x10)) printf("CTL_Init():: Processing Temp Data returned DIMM_GRP overheat\n" );
+                if ((ret & 0x20)) printf("CTL_Init():: Processing Temp Data returned M_2_GRP overheat\n" );
+                if ((ret & 0x40)) printf("CTL_Init():: Processing Temp Data returned SFF_GRP overheat\n" );
+                if ((ret & 0x80)) printf("CTL_Init():: Processing Temp Data returned MEZZ overheat\n" );
+                if ((ret & 0x100)) printf("CTL_Init():: Processing Temp Data returned BOARD overheat\n" );
+                if ((ret & 0x200)) printf("CTL_Init():: Processing Temp Data returned AIR overheat\n" );
             }
         }
         #endif
@@ -465,16 +465,16 @@ void CTL_OnlineCALLBACK(){
     case -1: {printf("CTL_OnlineCALLBACK():: Processing Temp Data returned NOT_READY\n" ); break;}
     case 0: {printf("CTL_OnlineCALLBACK():: Processing Temp Data returned TEMPS_OK\n" ); break;}
     default:{
-            if (ret & 0x1) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned CPU1 overheat\n" );
-            if (ret & 0x2) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned CPU2 overheat\n" );
-            if (ret & 0x4) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned MISC overheat\n" );
-            if (ret & 0x8) printf("CTL_Online():: Processing Temp Data returned RAM overheat\n" );
-            if (ret & 0x10) printf("CTL_Online():: Processing Temp Data returned DIMM_GRP overheat\n" );
-            if (ret & 0x20) printf("CTL_Online():: Processing Temp Data returned M_2_GRP overheat\n" );
-            if (ret & 0x40) printf("CTL_Online():: Processing Temp Data returned SFF_GRP overheat\n" );
-            if (ret & 0x80) printf("CTL_Online():: Processing Temp Data returned MEZZ overheat\n" );
-            if (ret & 0x100) printf("CTL_Online():: Processing Temp Data returned BOARD overheat\n" );
-            if (ret & 0x200) printf("CTL_Online():: Processing Temp Data returned AIR overheat\n" );
+            if ( (ret & 0x1) ) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned CPU1 overheat\n" );
+            if ( (ret & 0x2) ) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned CPU2 overheat\n" );
+            if ( (ret & 0x4) ) printf("CTL_OnlineCALLBACK():: Processing Temp Data returned MISC overheat\n" );
+            if ( (ret & 0x8) ) printf("CTL_Online():: Processing Temp Data returned RAM overheat\n" );
+            if ( (ret & 0x10) ) printf("CTL_Online():: Processing Temp Data returned DIMM_GRP overheat\n" );
+            if ( (ret & 0x20) ) printf("CTL_Online():: Processing Temp Data returned M_2_GRP overheat\n" );
+            if ( (ret & 0x40) ) printf("CTL_Online():: Processing Temp Data returned SFF_GRP overheat\n" );
+            if ( (ret & 0x80) ) printf("CTL_Online():: Processing Temp Data returned MEZZ overheat\n" );
+            if ( (ret & 0x100) ) printf("CTL_Online():: Processing Temp Data returned BOARD overheat\n" );
+            if ( (ret & 0x200) ) printf("CTL_Online():: Processing Temp Data returned AIR overheat\n" );
         }
     }
     #endif

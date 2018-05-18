@@ -172,9 +172,9 @@
 
 #define DEBUG_I2C                       1           //i2c.c
 #define DEBUG_CTL                       1           //ctl.c
-//#define DEBUG_RHU                       1           //RHU.c
+#define DEBUG_RHU                       1           //RHU.c
 //#define DEBUG_PWM                       1           //PWM.c
-//#define DEBUG_IOINIT                    1           //IOInit.c
+#define DEBUG_IOINIT                    1           //IOInit.c
 //#define DEBUG_LCD                       1           //LCD.c
 //#define DEBUG_LED                       1           //LED.c
 //#define DEBUG_SYS_ID                    1           //SysID.c
