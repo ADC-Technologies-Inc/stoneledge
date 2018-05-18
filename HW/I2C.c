@@ -166,18 +166,12 @@ void CheckI2CHold(void)
         //while(GpioDataRegs.GPBDAT.bit.GPIO32 == 0)
         while(j < 10)
         {
-            i = time_ms;
             GpioDataRegs.GPBCLEAR.bit.GPIO33 = 1;
-            // delay for 5 ms
-            while(i + 1 > time_ms)
-            {
-                asm(" NOP");
-            }
+            DELAY_US(5000);
+
             GpioDataRegs.GPBSET.bit.GPIO33 = 1;
-            while(i + 2 > time_ms)
-            {
-                asm(" NOP");
-            }
+            DELAY_US(5000);
+
             j++;
         }
     }
