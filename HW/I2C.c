@@ -108,8 +108,8 @@ void I2C_Init(void)
     *
     *
     */
-   I2caRegs.I2CCLKL = 30;           // NOTE: must be non zero,
-   I2caRegs.I2CCLKH = 30;           // NOTE: must be non zero
+   I2caRegs.I2CCLKL = 5;           // NOTE: must be non zero,
+   I2caRegs.I2CCLKH = 5;           // NOTE: must be non zero
 
    I2caRegs.I2CIER.all = 0x00;
    I2caRegs.I2CIER.bit.SCD = 1;     //Stop Condition
@@ -266,8 +266,8 @@ re_enter:
 
     ASSERT( !tx_flag && !rx_flag);  //neither of these should be possible as i2c has the highest priority due to the MUX
 
-    //I2C_WAITFOR((!I2caRegs.I2CSTR.bit.BB), "I2C_Tx():: Resetting bus waiting for bus\n");
-	while(I2caRegs.I2CSTR.bit.BB ); //Wait for bus and device to be available
+    I2C_WAITFOR((!I2caRegs.I2CSTR.bit.BB), "I2C_Tx():: Resetting bus waiting for bus\n");
+	//while(I2caRegs.I2CSTR.bit.BB ); //Wait for bus and device to be available
 
 	//Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
 	if (!tempIER && IER & 0x04){    //check if the setting has already been saved first and then if INT3 is set
@@ -298,11 +298,11 @@ re_enter:
 	I2caRegs.I2CMDR.all |= I2CMDR_STT | I2CMDR_TRX | I2CMDR_STP | I2CMDR_MST | I2CMDR_FREE;
 	//I2caRegs.I2CMDR.all = 0x6E20;
 
-	//I2C_WAITFOR(!(tx_flag), "I2C_Tx():: Resetting bus waiting for tx_flag\n");
-	for(;;){
-	    if (!tx_flag) break;
-	}
-    times_round = 0;
+	I2C_WAITFOR(!(tx_flag), "I2C_Tx():: Resetting bus waiting for tx_flag\n");
+	//for(;;){
+	//    if (!tx_flag) break;
+	//}
+    /*times_round = 0;
     for(;;){
         if (!tx_flag) break;
         if (times_round++ > 1000) {
@@ -312,7 +312,7 @@ re_enter:
             tx_flag=rx_flag=0;
             goto re_enter;
         }
-    }
+    }*/
 
     if ( fail_flag ){
         if (retry==3){
@@ -349,8 +349,8 @@ re_enter:
     DINT;       //disable group 3 interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
 
     ASSERT( !tx_flag && !rx_flag);
-    //I2C_WAITFOR((!I2caRegs.I2CSTR.bit.BB), "I2C_Rx():: Resetting bus waiting for bus\n");
-    while(I2caRegs.I2CSTR.bit.BB  ); //Wait for bus and device to be available
+    I2C_WAITFOR((!I2caRegs.I2CSTR.bit.BB), "I2C_Rx():: Resetting bus waiting for bus\n");
+    //while(I2caRegs.I2CSTR.bit.BB  ); //Wait for bus and device to be available
 
     //Save PIE Group 3 status (make sure re-enter doesn't cause an issue)
     if (!tempIER && IER & 0x04){    //check if the setting has already been saved first and then if INT3 is set
@@ -384,10 +384,10 @@ re_enter:
             goto re_enter;
         }
     }*/
-//    I2C_WAITFOR(rxready, "I2C_Rx():: Resetting bus waiting for rxready\n");
-	for(;;){
-		if(rxready) break;
-	}
+    I2C_WAITFOR(rxready, "I2C_Rx():: Resetting bus waiting for rxready\n");
+	//for(;;){
+	//	if(rxready) break;
+	//}
 
     I2caRegs.I2CCNT = count; 						// Setup how many bytes to expect
     I2caRegs.I2CMDR.bit.TRX = 0;                    //set to receiver mode
@@ -406,10 +406,10 @@ re_enter:
             goto re_enter;
         }
     }*/
-    //I2C_WAITFOR( (!rx_flag) , "I2C_Rx():: Resetting bus waiting for rx_flag\n");
-    for(;;){
+    I2C_WAITFOR( (!rx_flag) , "I2C_Rx():: Resetting bus waiting for rx_flag\n");
+    /*for(;;){
         if (!rx_flag) break;
-    }
+    }*/
 
     if ( fail_flag ){
         if (retry==3){
