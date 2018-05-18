@@ -378,6 +378,22 @@ int ProcessTempData(void)
             printf("ProcessTemps():: Returning err="PRINTF_BINSTR16"\n", PRINTF_BINSTR16_ARGS(err));
         #endif
 
+    #ifdef DEBUG_TEMPS
+    if (err){
+        for (i =0; i < 176; i++){
+            switch(i){
+            case 55:
+            case 110:{
+                printf("ProcessTemps():: IDX %d, temp = %d\n", i,CONVERTTEMP_SC30(AverageTempArray[i]) );
+                break;
+            }
+            default:
+                printf("ProcessTemps():: IDX %d, temp = %d\n", i,CONVERTTEMP_NCP(AverageTempArray[i]) );
+            }
+        }
+    }
+    #endif
+
 		return err;
 	}else{
 	    return 0;
