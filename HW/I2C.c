@@ -109,7 +109,7 @@ void I2C_Init(void)
     *
     */
    I2caRegs.I2CCLKL = 5;           // NOTE: must be non zero,
-   I2caRegs.I2CCLKH = 5;           // NOTE: must be non zero
+   I2caRegs.I2CCLKH = 4;           // NOTE: must be non zero
 
    I2caRegs.I2CIER.all = 0x00;
    I2caRegs.I2CIER.bit.SCD = 1;     //Stop Condition
@@ -229,9 +229,9 @@ void I2C_ResetBus(void){
     times_round = 0;\
     for(;;){\
         if (flag_) break;\
-        if (times_round++ > 1000) {\
+        if (times_round++ > 10000) {\
             printf(MSG_);\
-            I2C_ResetBus();\
+            CheckI2CHold();\
             retry++;\
             tx_flag=rx_flag=0;\
             goto re_enter;\
@@ -242,8 +242,8 @@ void I2C_ResetBus(void){
     times_round = 0;\
     for(;;){\
         if (flag_) break;\
-        if (times_round++ > 1000) {\
-            I2C_ResetBus();\
+        if (times_round++ > 10000) {\
+            CheckI2CHold();\
             tx_flag=rx_flag=0;\
             retry++;\
             goto re_enter;\
