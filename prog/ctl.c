@@ -483,14 +483,16 @@ void CTL_OnlineCALLBACK(){
 
         //Over temperature condition in an RHU or on board
         for (i = 0; i < RHU_COUNT; i++ ){
-            if ( (ret & 0x1) ) LED_Set(i);
+            if ( (ret & 0x1) ){
+                LED_Set(i);
+                #ifdef DEBUG_CTL
+                printf("CTL_OnlineCALLBACK():: Over temperature error on RHU %d, reporting to watchdog\n", i );
+                #endif
+
+                RHU_Watchdog_FAIL(i);
+            }
+
             ret >>= 1;
-
-            #ifdef DEBUG_CTL
-            printf("CTL_Online():: Over temperature error on RHU %d, reporting to watchdog\n", i );
-            #endif
-
-            RHU_Watchdog_FAIL(i);
         }
 
         if ( ret ){
