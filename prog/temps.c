@@ -20,6 +20,9 @@ struct TempCell{
 	uint16_t 	led_state;
 };
 
+uint16_t cpu1_temp = 0;
+uint16_t cpu2_temp = 0;
+
 static struct TempCell Cpu1;
 static struct TempCell Cpu2;
 static struct TempCell Misc;
@@ -60,6 +63,9 @@ static uint16_t max_temp = 0;
 
 uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_);
 
+uint16_t GetCPUTemp(uint16_t cpu_){
+    return (cpu_ == CPU1) ? cpu1_temp : cpu2_temp;
+}
 
 uint16_t GetMaxTempData(void){
    return max_temp;
@@ -117,11 +123,11 @@ int ProcessTempData(void)
 		TESTANDSET_MAXTEMP( 0, 88 );
         Temps[0]->max_temp = CONVERTTEMP_NCP(Temps[0]->max_temp_counts);
 
-		sc30_temp = CONVERTTEMP_SC30(AverageTempArray[55]);
-		if (sc30_temp > Temps[0]->max_temp) Temps[0]->max_temp = sc30_temp;
+        cpu1_temp = CONVERTTEMP_SC30(AverageTempArray[55]);
+		if (cpu1_temp > Temps[0]->max_temp) Temps[0]->max_temp = cpu1_temp;
 
 #ifdef DEBUG_TEMPS
-		printf("IDX: 55 TEMP: %d   SC30\n", sc30_temp);
+		printf("IDX: 55 TEMP: %d   SC30\n", cpu1_temp);
 #endif
 
 		// CPU 2
@@ -131,10 +137,10 @@ int ProcessTempData(void)
 		TESTANDSET_MAXTEMP( 1, 143 );
         Temps[1]->max_temp = CONVERTTEMP_NCP(Temps[1]->max_temp_counts);
 
-        sc30_temp = CONVERTTEMP_SC30(AverageTempArray[110]);
-        if (sc30_temp > Temps[1]->max_temp) Temps[1]->max_temp = sc30_temp;
+        cpu2_temp = CONVERTTEMP_SC30(AverageTempArray[110]);
+        if (cpu2_temp > Temps[1]->max_temp) Temps[1]->max_temp = cpu2_temp;
 #ifdef DEBUG_TEMPS
-        printf("IDX: 110 TEMP: %d   SC30\n", sc30_temp);
+        printf("IDX: 110 TEMP: %d   SC30\n", cpu2_temp);
 #endif
 
 
