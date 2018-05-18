@@ -178,7 +178,7 @@
 //#define DEBUG_LCD                       1           //LCD.c
 //#define DEBUG_LED                       1           //LED.c
 //#define DEBUG_SYS_ID                    1           //SysID.c
-//#define DEBUG_TEMPS                     1           //temps.c*/
+#define DEBUG_TEMPS                     1           //temps.c*/
 
 
 

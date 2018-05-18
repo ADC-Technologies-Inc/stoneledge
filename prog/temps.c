@@ -78,12 +78,12 @@ uint16_t GetTempDataSingle(uint16_t rhu_)
 }
 
 
-#ifdef DEBUG_TEMPS
+/*#ifdef DEBUG_TEMPS
 #define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];\
     printf("IDX: %d COUNTS: %d, TEMP: %d\n",idx_, (uint16_t) AverageTempArray[idx_], CONVERTTEMP_NCP(AverageTempArray[idx_]));
-#else
+#else*/
 #define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];
-#endif
+//#endif
 
 /*
  * RETURNS
@@ -324,34 +324,59 @@ int ProcessTempData(void)
 
 		//Verify all temps are within spec.
 		err = 0;
-        if(Temps[0]->max_temp > RHU1_TEMP_MAX_LIMIT)
-        {
+        if(Temps[0]->max_temp > RHU1_TEMP_MAX_LIMIT){
+            #ifdef DEBUG_TEMPS
+                printf("ProcessTemps():: Flagging CPU1 with Overtemp = %d\n", Temps[0]->max_temp);
+            #endif
             err = 0x1;
         }
 
-        if(Temps[1]->max_temp > RHU2_TEMP_MAX_LIMIT)
-        {
+        if(Temps[1]->max_temp > RHU2_TEMP_MAX_LIMIT){
+            #ifdef DEBUG_TEMPS
+                printf("ProcessTemps():: Flagging CPU2 with Overtemp = %d\n", Temps[1]->max_temp);
+            #endif
             err += 0x2;
         }
 
         //Remaining RHUs
 	    for(i =2; i < RHU_COUNT; i++){
 	        if(Temps[i]->max_temp > RHU_TEMP_MAX_LIMIT){
+                #ifdef DEBUG_TEMPS
+	            switch (i){
+	            case 2: { printf("ProcessTemps():: Flagging MISC with Overtemp = %d\n", Temps[i]->max_temp); break; }
+	            case 3: { printf("ProcessTemps():: Flagging RAM with Overtemp = %d\n", Temps[i]->max_temp); break; }
+	            case 4: { printf("ProcessTemps():: Flagging DIMM_GRP with Overtemp = %d\n", Temps[i]->max_temp); break; }
+	            case 5: { printf("ProcessTemps():: Flagging M2_GRP with Overtemp = %d\n", Temps[i]->max_temp); break; }
+	            case 6: { printf("ProcessTemps():: Flagging SFF_GRP with Overtemp = %d\n", Temps[i]->max_temp); break; }
+	            case 7: { printf("ProcessTemps():: Flagging MEZZ with Overtemp = %d\n", Temps[i]->max_temp); break; }
+	            }
+                #endif
 	            err += ( 1 << i );
 	        }
 	    }
 
+
 	    //Board
 	    if(Temps[8]->max_temp > BOARD_TEMP_MAX_LIMIT)
 	    {
+            #ifdef DEBUG_TEMPS
+                printf("ProcessTemps():: Flagging BOARD with Overtemp = %d\n", Temps[8]->max_temp);
+            #endif
 	        err += ( 1 << 8 );
 	    }
 
 	    //Air
 	    if(Temps[9]->max_temp > AIR_TEMP_MAX_LIMIT)
 	    {
+            #ifdef DEBUG_TEMPS
+                printf("ProcessTemps():: Flagging AIR with Overtemp = %d\n", Temps[9]->max_temp);
+            #endif
 	        err += ( 1 << 9 );
 	    }
+
+        #ifdef DEBUG_TEMPS
+            printf("ProcessTemps():: Returning err="PRINTF_BINSTR16"\n", PRINTF_BINSTR16_ARGS(err));
+        #endif
 
 		return err;
 	}else{
@@ -376,27 +401,6 @@ uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
     T *= 10;                                // converts to C * 10
     return (uint16_t) T;
 }
-
-/*uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
-{
-    double R         = 0;                   // measured resistance of NTC
-    double tempDen   = 0;                   // denominator of temp calc
-    double tempNum   = 0;                   // numerator of temp calc
-    double T         = 0;                   // result of temp calc in Kelvin
-
-    //Calculate resistance reading
-    tempNum = RES_DIV*(double)(4096 - counts_);
-    tempNum /= (double)4096;
-    tempDen = (double)(4096 - counts_)/(double)4096;
-    tempDen = (double)1 - tempDen;
-    R = tempNum / tempDen;                  // measured resistance value of NTC
-
-    tempDen = log(R / r_inf_);               // used natural log to calculate the denominator of temp calc
-    T = beta_ / tempDen;                  // temp in K
-    T -= C_TO_K;                            // converts to C
-    T *= 10;                                // converts to C * 10
-    return (uint16_t) T;                     // returns at uint16_t
-}*/
 
 void InitTemp(void)
 {
