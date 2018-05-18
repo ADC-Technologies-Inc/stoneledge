@@ -156,7 +156,11 @@
 ////////////////////////////////////////
 //  WATCHDOG
 ////////////////////////////////////////
+<<<<<<< HEAD
 //#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail error
+=======
+//#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail errors
+>>>>>>> branch 'master' of https://github.com/ADC-Technologies-Inc/stoneledge.git
 #define     RHU_WATCHDOG_DELAY          30000       //turn off each RHU for a minimum of 30s
 
 
