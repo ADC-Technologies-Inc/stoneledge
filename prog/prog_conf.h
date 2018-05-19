@@ -130,15 +130,18 @@
 #define			MAX_PEAK_CURRENT		1800		// maximum peak board current A*100
 
 ////////////////////////////////////////
-//	RHU Temp
+//	Temps for the various sensors (heaters do not share the same restrictions, neither do the VRM resistors are they're generally hardier on a board)
 ////////////////////////////////////////
 
-#define 	AIR_TEMP_MAX_LIMIT 			700 		// temp value (c * 10) before error is thrown
-#define 	BOARD_TEMP_MAX_LIMIT 		700			// Board temp limit
-#define     RHU1_TEMP_MAX_LIMIT         900         // CPU1
-#define     RHU2_TEMP_MAX_LIMIT         900         // CPU2
-#define 	RHU_TEMP_MAX_LIMIT 			700         // All other RHUs
-
+#define MAXTEMP_KAPTONHTR   1050
+#define MAXTEMP_VRM         850
+#define MAXTEMP_CPU         700
+#define MAXTEMP_RAM         700
+#define MAXTEMP_DIMM        700
+#define MAXTEMP_M2          700
+#define MAXTEMP_SFF         700
+#define MAXTEMP_MEZZ        700
+#define MAXTEMP_MISC        700
 
 #define 	PTC_DAMAGED_THRESHOLD_L 	80 			// raw ADC value that indicates a damaged permanent PTC
 #define 	PTC_DAMAGED_THRESHOLD_U 	4000 		// raw ADC value that indicates a damaged permanent PTC
@@ -156,11 +159,7 @@
 ////////////////////////////////////////
 //  WATCHDOG
 ////////////////////////////////////////
-<<<<<<< HEAD
-//#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail error
-=======
-//#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail errors
->>>>>>> branch 'master' of https://github.com/ADC-Technologies-Inc/stoneledge.git
+#define     DISABLE_WATCHDOG            0           //disable the RHU watchdog which will not detect/trigger TCO fail errors
 #define     RHU_WATCHDOG_DELAY          30000       //turn off each RHU for a minimum of 30s
 
 
@@ -178,7 +177,7 @@
 #define DEBUG_CTL                       1           //ctl.c
 #define DEBUG_RHU                       1           //RHU.c
 //#define DEBUG_PWM                       1           //PWM.c
-#define DEBUG_IOINIT                    1           //IOInit.c
+//#define DEBUG_IOINIT                    1           //IOInit.c
 //#define DEBUG_LCD                       1           //LCD.c
 //#define DEBUG_LED                       1           //LED.c
 //#define DEBUG_SYS_ID                    1           //SysID.c

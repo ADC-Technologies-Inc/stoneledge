@@ -68,8 +68,8 @@ const static uint16_t *lcd_status_messages[22] = {msg_pre_startup
                                                   , msg_ramp_rhu8
                                                     };
 
-static uint16_t msg_rhu_1[16] = {0x43, 0x50, 0x55, 0x31, 0x20, 0x78, 0x78, 0x2e, 0x78, 0x43, 0x2c, 0x78, 0x78, 0x2e, 0x78, 0x43}; 				// RHU 1 INFO CPU1               "CPU1 xx.xC,xx.xC"
-static uint16_t msg_rhu_2[16] = {0x43, 0x50, 0x55, 0x32, 0x20, 0x78, 0x78, 0x2e, 0x78, 0x43, 0x2c, 0x78, 0x78, 0x2e, 0x78, 0x43}; 				// RHU 2 INFO CPU2               "CPU2 xx.xC,xx.xC"
+static uint16_t msg_rhu_1[16] = {0x43, 0x50, 0x55, 0x31, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x2e, 0x78, 0x43}; 				// RHU 1 INFO CPU1               "CPU1       xx.xC"
+static uint16_t msg_rhu_2[16] = {0x43, 0x50, 0x55, 0x32, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x2e, 0x78, 0x43}; 				// RHU 2 INFO CPU2               "CPU2       xx.xC"
 static uint16_t msg_rhu_3[16] = {0x43, 0x48, 0x49, 0x50, 0x53, 0x45, 0x54, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x2E, 0x78, 0x43};               // RHU 3 INFO MISC               "CHIPSET    xx.xC"
 static uint16_t msg_rhu_4[16] = {0x42, 0x4F, 0x41, 0x52, 0x44, 0x5F, 0x52, 0x41, 0x4D, 0x20, 0x20, 0x78, 0x78, 0x2E, 0x78, 0x43};               // RHU 5 INFO RAM                "BOARD_RAM  xx.xC"
 static uint16_t msg_rhu_5[16] = {0x44, 0x49, 0x4D, 0x4D, 0x73, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x2E, 0x78, 0x43}; 				// RHU 4 INFO DIMM_GRP           "DIMMs      xx.xC"
@@ -139,11 +139,10 @@ void LcdPostModal(uint16_t msg_)
 void IncrementLcdCycleMsg(void)
 {
 	lcd_cycle_msg_holder++;
-	if(lcd_cycle_msg_holder > 8)
-	{
-		lcd_cycle_msg_holder = 0;
+	switch (lcd_cycle_msg_holder){
+	//case 2: { lcd_cycle_msg_holder++; break; }    //Skip chipset until we can find a better way of displaying the chipset and not the heater temp
+	case 8: { lcd_cycle_msg_holder = 0; break; }
 	}
-
 	UpdateRhuTempsLcd();
 
 	LcdPostMsgCycle(lcd_cycle_msg_holder);
@@ -251,52 +250,6 @@ void LcdWriteMaxTemp(uint16_t temp_)
 void LcdWriteTemp(uint16_t temp_, uint16_t rhu_)
 {
     WriteTempToString(&lcd_rhu_messages[rhu_][11] , temp_ );
-    if ( rhu_ == CPU1) WriteTempToString(&lcd_rhu_messages[rhu_][5] , cpu1_temp );
-    if ( rhu_ == CPU2) WriteTempToString(&lcd_rhu_messages[rhu_][5] , cpu2_temp );
-
-/*	static int i;
-	static int started;
-	started = 0;
-	i = temp_;
-	if(temp_ < 100)
-	{
-		lcd_rhu_messages[rhu_][11] = 0x20; 		// if power is only 2 digits, pad with blank space
-	}
-	else
-	{
-		i /= 100;
-		lcd_rhu_messages[rhu_][11] = (0x30 + i);
-		temp_ -= (i * 100);
-		started = 1;
-		i = temp_;
-	}
-	if(temp_ < 10)
-	{
-		if(started)
-		{
-			lcd_rhu_messages[rhu_][12] = 0x30; 	// if there was a hundreds digit then a zero for tens
-		}
-		else
-		{
-			lcd_rhu_messages[rhu_][12] = 0x30; 	// if there wasn't a hudreds digit either, blank space for tens digit
-		}
-	}
-	else
-	{
-		i/=10;
-		lcd_rhu_messages[rhu_][12] = (0x30 + i);
-		temp_ -= (i * 10);
-		started = 1;
-		i = temp_;
-	}
-	if(!temp_)
-	{
-		lcd_rhu_messages[rhu_][14] = 0x30; 		// always put a zero
-	}
-	else
-	{
-		lcd_rhu_messages[rhu_][14] = (0x30 + i);
-	}*/
 }
 
 /*

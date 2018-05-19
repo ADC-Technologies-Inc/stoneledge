@@ -409,17 +409,10 @@ void RHU_Watchdog_Service(){
     for (i=0; i< RHU_COUNT; i++){
         if (rhu_state[i].watchdog ){
 
-            //Get RHU temperature and check if it's valid
-            temp = GetTempDataSingle(i);
-            switch(i){
-            case CPU1: { overheat = (temp > RHU1_TEMP_MAX_LIMIT); break; }
-            case CPU2: { overheat = (temp > RHU2_TEMP_MAX_LIMIT); break; }
-            default: { overheat = (temp > RHU_TEMP_MAX_LIMIT); break; }
-            }
 
             if ( rhu_state[i].en ){
                 //RHU is being ramped up again, check if the temperature has exceeded safety limits
-                if (overheat){
+                if ( TEMPS_GetFlag(i) ){
                     //turn it off again and reset event timer
                     rhu_state[i].wd_last_overtemp = time_ms;
                     RHU_DisableRHU(i);

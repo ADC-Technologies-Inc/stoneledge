@@ -10,33 +10,16 @@
 
 #define NUM_TEMPS 		10
 
-struct TempCell{
-	uint16_t 	max_temp;
-	uint16_t 	max_temp_counts;
-	uint16_t 	watchdog_flagged;
-	uint16_t 	wd_flag_time;
-	uint16_t 	rhu_type; 			// right now 0 is permanent and 1 is removable, this will be changed to codes when Ethernet is brought online
-	uint16_t 	ntc_error;
-	uint16_t 	led_state;
+struct temps_perRHU_{
+	uint16_t 	max_temp;                           //max temp in xxx format
+	uint16_t    flagged;                            //RHU is flagged as overheat
 };
 
-uint16_t cpu1_temp = 0;
-uint16_t cpu2_temp = 0;
+static struct temps_perRHU_ Temps[NUM_TEMPS];       
 
-static struct TempCell Cpu1;
-static struct TempCell Cpu2;
-static struct TempCell Misc;
-static struct TempCell Ram;
-static struct TempCell Dimm;
-static struct TempCell Mtwo;
-static struct TempCell Sff;
-static struct TempCell Mezz;
-static struct TempCell Board;
-static struct TempCell Air;
 
-static struct TempCell *Temps[NUM_TEMPS] = {&Cpu1, &Cpu2, &Misc, &Ram, &Dimm, &Mtwo, &Sff, &Mezz, &Board, &Air};
-
-uint32_t *AverageTempArray;
+uint32_t *temps_inCounts;
+uint16_t temps_bySensor[176] = {0};
 
 static uint16_t max_temp = 0;
 
@@ -63,10 +46,6 @@ static uint16_t max_temp = 0;
 
 uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_);
 
-uint16_t GetCPUTemp(uint16_t cpu_){
-    return (cpu_ == CPU1) ? cpu1_temp : cpu2_temp;
-}
-
 uint16_t GetMaxTempData(void){
    return max_temp;
 }
@@ -74,16 +53,39 @@ uint16_t GetMaxTempData(void){
 /*rhu_ is 0-based*/
 uint16_t GetTempDataSingle(uint16_t rhu_)
 {
-	return Temps[rhu_]->max_temp;
+    switch(rhu_){
+    case 0: return temps_bySensor[55];
+    case 1: return temps_bySensor[110];
+    }
+
+    return Temps[rhu_].max_temp;
 }
 
+uint16_t TEMPS_GetFlag( uint16_t rhu_ ){
+    return Temps[rhu_].flagged;
+}
 
-/*#ifdef DEBUG_TEMPS
-#define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];\
-    printf("IDX: %d COUNTS: %d, TEMP: %d\n",idx_, (uint16_t) AverageTempArray[idx_], CONVERTTEMP_NCP(AverageTempArray[idx_]));
-#else*/
-#define TESTANDSET_MAXTEMP( arr_, idx_) if(Temps[arr_]->max_temp_counts < AverageTempArray[idx_] ) Temps[arr_]->max_temp_counts = AverageTempArray[idx_];
-//#endif
+#define TESTANDSET_MAXTEMP( arr_, idx_, MAX_, temp_ )\
+        temps_bySensor[idx_] = temp_;\
+        if ( temps_bySensor[idx_] > Temps[arr_].max_temp ) Temps[arr_].max_temp = temps_bySensor[idx_];\
+        if ( temps_bySensor[idx_] > MAX_ ) { Temps[arr_].flagged = 1; flagged++; }
+
+#define TESTANDSET_MAXTEMP_NCP( arr_, idx_, MAX_)\
+            TESTANDSET_MAXTEMP( arr_, idx_, MAX_, CONVERTTEMP_NCP(temps_inCounts[idx_]) )
+
+#define TESTANDSET_MAXTEMP_JT( arr_, idx_, MAX_)\
+            TESTANDSET_MAXTEMP( arr_, idx_, MAX_, CONVERTTEMP_JT(temps_inCounts[idx_]) )
+
+#define TESTANDSET_MAXTEMP_INIT( arr_, idx_, MAX_, temp_ )\
+        Temps[arr_].flagged = 0;\
+        Temps[arr_].max_temp = temps_bySensor[idx_] = temp_;\
+        if ( temps_bySensor[idx_] > MAX_ ) { Temps[arr_].flagged = 1; flagged++; }
+
+#define TESTANDSET_MAXTEMP_NCP_INIT( arr_, idx_, MAX_)\
+            TESTANDSET_MAXTEMP_INIT( arr_, idx_, MAX_, CONVERTTEMP_NCP(temps_inCounts[idx_]) )
+
+#define TESTANDSET_MAXTEMP_JT_INIT( arr_, idx_, MAX_)\
+            TESTANDSET_MAXTEMP_INIT( arr_, idx_, MAX_, CONVERTTEMP_JT(temps_inCounts[idx_]) )
 
 /*
  * RETURNS
@@ -103,301 +105,247 @@ uint16_t GetTempDataSingle(uint16_t rhu_)
  * BOARD                       0x100
  * AIR                         0x200
  *
- * */
+ *
+ *#define   AIR_TEMP_MAX_LIMIT          700         // temp value (c * 10) before error is thrown
+#define     BOARD_TEMP_MAX_LIMIT        700         // Board temp limit
+#define     RHU1_TEMP_MAX_LIMIT         900         // CPU1
+#define     RHU2_TEMP_MAX_LIMIT         900         // CPU2
+#define     RHU_TEMP_MAX_LIMIT          700         // All other RHUs
+*/
+
 int ProcessTempData(void)
 {
     /*NTD - VERIFIED 05/10/18. ALL IDX ACCURATE*/
 
-    uint16_t sc30_temp, i;
-    int err = 0;
+    int err = 0, i=0, flagged = 0;
 
-	if(GetNtcReady() == 1)
-	{
-		ClearNtcReady();
-		AverageTempArray = GetTempData();
-		// CPU 1
-		Temps[0]->max_temp_counts = AverageTempArray[44];
+    if( !GetNtcReady() ) return 0;
 
-		TESTANDSET_MAXTEMP( 0, 66 );
-		TESTANDSET_MAXTEMP( 0, 77 );
-		TESTANDSET_MAXTEMP( 0, 88 );
-        Temps[0]->max_temp = CONVERTTEMP_NCP(Temps[0]->max_temp_counts);
+    ClearNtcReady();
+    temps_inCounts = GetTempData();
 
-        cpu1_temp = CONVERTTEMP_SC30(AverageTempArray[55]);
-		if (cpu1_temp > Temps[0]->max_temp) Temps[0]->max_temp = cpu1_temp;
+    // CPU 1
+    TESTANDSET_MAXTEMP_NCP_INIT( 0, 44, MAXTEMP_KAPTONHTR );        //THRM1-CPU1
+    TESTANDSET_MAXTEMP_NCP( 0, 66, MAXTEMP_VRM );                   //VRM1-T1
+    TESTANDSET_MAXTEMP_NCP( 0, 77, MAXTEMP_VRM);                    //VRM1-T3
+    TESTANDSET_MAXTEMP_NCP( 0, 88, MAXTEMP_VRM);                    //VRM1-T3
 
-#ifdef DEBUG_TEMPS
-		printf("IDX: 55 TEMP: %d   SC30\n", cpu1_temp);
-#endif
+    temps_bySensor[55] = CONVERTTEMP_SC30(temps_inCounts[55]);      //THRM2-CPU1
+    if (temps_bySensor[55] > Temps[0].max_temp) Temps[0].max_temp = temps_bySensor[55];
+    if (temps_bySensor[55] > MAXTEMP_CPU ) Temps[0].flagged = 1;
 
-		// CPU 2
-		Temps[1]->max_temp_counts = AverageTempArray[99];
-		TESTANDSET_MAXTEMP( 1, 121 );
-		TESTANDSET_MAXTEMP( 1, 132 );
-		TESTANDSET_MAXTEMP( 1, 143 );
-        Temps[1]->max_temp = CONVERTTEMP_NCP(Temps[1]->max_temp_counts);
+    // CPU 2
+    TESTANDSET_MAXTEMP_NCP_INIT( 1, 99, MAXTEMP_KAPTONHTR );        //THRM1-CPU2
+    TESTANDSET_MAXTEMP_NCP( 1, 121, MAXTEMP_VRM );                  //VRM2-T1
+    TESTANDSET_MAXTEMP_NCP( 1, 132, MAXTEMP_VRM );                  //VRM2-T2
+    TESTANDSET_MAXTEMP_NCP( 1, 143, MAXTEMP_VRM );                  //VRM2-T3
 
-        cpu2_temp = CONVERTTEMP_SC30(AverageTempArray[110]);
-        if (cpu2_temp > Temps[1]->max_temp) Temps[1]->max_temp = cpu2_temp;
-#ifdef DEBUG_TEMPS
-        printf("IDX: 110 TEMP: %d   SC30\n", cpu2_temp);
-#endif
+    temps_bySensor[110] = CONVERTTEMP_SC30(temps_inCounts[110]);    //THRM2-CPU1
+    if (temps_bySensor[110] > Temps[1].max_temp) Temps[1].max_temp = temps_bySensor[110];
+    if (temps_bySensor[110] > MAXTEMP_CPU ) Temps[1].flagged = 1;
 
+    // MISC
+    TESTANDSET_MAXTEMP_NCP_INIT( 2, 89, MAXTEMP_MISC );             //T-IC2
+    TESTANDSET_MAXTEMP_NCP( 2, 100, MAXTEMP_MISC );                 //T-IC1
+    TESTANDSET_MAXTEMP_NCP( 2, 165, MAXTEMP_KAPTONHTR );            //CSETSIM_THRM1
 
-		// MISC
-		Temps[2]->max_temp_counts = AverageTempArray[89];
-		TESTANDSET_MAXTEMP( 2, 100 );
-		TESTANDSET_MAXTEMP( 2, 165 );
-		Temps[2]->max_temp = CONVERTTEMP_NCP(Temps[2]->max_temp_counts);
+    // RAM
+    TESTANDSET_MAXTEMP_NCP_INIT( 3, 1, MAXTEMP_RAM);
+    TESTANDSET_MAXTEMP_NCP( 3, 2, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 12, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 13, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 23, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 24, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 34, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 35, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 45, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 46, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 56, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 57, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 67, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 68, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 78, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 79, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 90, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 101, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 111, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 122, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 133, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 144, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 155, MAXTEMP_RAM );
+    TESTANDSET_MAXTEMP_NCP( 3, 166, MAXTEMP_RAM );
 
+    // DIMM
+    TESTANDSET_MAXTEMP_NCP_INIT( 4, 3, MAXTEMP_DIMM );
+    TESTANDSET_MAXTEMP_NCP( 4, 4, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 14, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 15, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 25, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 26, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 36, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 37, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 47, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 48, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 58, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 59, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 69, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 70, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 80, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 81, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 91, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 92, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 102, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 103, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 112, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 113, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 123, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 124, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 134, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 135, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 145, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 146, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 156, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 157, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 167, MAXTEMP_DIMM  );
+    TESTANDSET_MAXTEMP_NCP( 4, 168, MAXTEMP_DIMM  );
 
-		// RAM
-		Temps[3]->max_temp_counts = AverageTempArray[1];
-		TESTANDSET_MAXTEMP( 3, 2 );
-		TESTANDSET_MAXTEMP( 3, 12 );
-		TESTANDSET_MAXTEMP( 3, 13 );
-		TESTANDSET_MAXTEMP( 3, 23 );
-		TESTANDSET_MAXTEMP( 3, 24 );
-		TESTANDSET_MAXTEMP( 3, 34 );
-		TESTANDSET_MAXTEMP( 3, 35 );
-		TESTANDSET_MAXTEMP( 3, 45 );
-		TESTANDSET_MAXTEMP( 3, 46 );
-		TESTANDSET_MAXTEMP( 3, 56 );
-		TESTANDSET_MAXTEMP( 3, 57 );
-		TESTANDSET_MAXTEMP( 3, 67 );
-		TESTANDSET_MAXTEMP( 3, 68 );
-		TESTANDSET_MAXTEMP( 3, 78 );
-		TESTANDSET_MAXTEMP( 3, 79 );
-		TESTANDSET_MAXTEMP( 3, 90 );
-		TESTANDSET_MAXTEMP( 3, 101 );
-		TESTANDSET_MAXTEMP( 3, 111 );
-		TESTANDSET_MAXTEMP( 3, 122 );
-		TESTANDSET_MAXTEMP( 3, 133 );
-		TESTANDSET_MAXTEMP( 3, 144 );
-		TESTANDSET_MAXTEMP( 3, 155 );
-		TESTANDSET_MAXTEMP( 3, 166 );
-		Temps[3]->max_temp = CONVERTTEMP_NCP(Temps[3]->max_temp_counts);
-;
-		// DIMM
-		Temps[4]->max_temp_counts = AverageTempArray[3];
-		TESTANDSET_MAXTEMP( 4, 4 );
-		TESTANDSET_MAXTEMP( 4, 14 );
-		TESTANDSET_MAXTEMP( 4, 15 );
-		TESTANDSET_MAXTEMP( 4, 25 );
-		TESTANDSET_MAXTEMP( 4, 26 );
-		TESTANDSET_MAXTEMP( 4, 36 );
-		TESTANDSET_MAXTEMP( 4, 37 );
-		TESTANDSET_MAXTEMP( 4, 47 );
-		TESTANDSET_MAXTEMP( 4, 48 );
-		TESTANDSET_MAXTEMP( 4, 58 );
-		TESTANDSET_MAXTEMP( 4, 59 );
-		TESTANDSET_MAXTEMP( 4, 69 );
-		TESTANDSET_MAXTEMP( 4, 70 );
-		TESTANDSET_MAXTEMP( 4, 80 );
-		TESTANDSET_MAXTEMP( 4, 81 );
-		TESTANDSET_MAXTEMP( 4, 91 );
-		TESTANDSET_MAXTEMP( 4, 92 );
-		TESTANDSET_MAXTEMP( 4, 102 );
-		TESTANDSET_MAXTEMP( 4, 103 );
-		TESTANDSET_MAXTEMP( 4, 112 );
-		TESTANDSET_MAXTEMP( 4, 113 );
-		TESTANDSET_MAXTEMP( 4, 123 );
-		TESTANDSET_MAXTEMP( 4, 124 );
-		TESTANDSET_MAXTEMP( 4, 134 );
-		TESTANDSET_MAXTEMP( 4, 135 );
-		TESTANDSET_MAXTEMP( 4, 145 );
-		TESTANDSET_MAXTEMP( 4, 146 );
-		TESTANDSET_MAXTEMP( 4, 156 );
-		TESTANDSET_MAXTEMP( 4, 157 );
-		TESTANDSET_MAXTEMP( 4, 167 );
-		TESTANDSET_MAXTEMP( 4, 168 );
-        Temps[4]->max_temp = CONVERTTEMP_NCP(Temps[4]->max_temp_counts);
+    // M.2
+    TESTANDSET_MAXTEMP_NCP_INIT( 5, 5, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 16, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 27, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 38, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 49, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 60, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 71, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 82, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 93, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 104, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 115, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 126, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 137, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 148, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 159, MAXTEMP_M2 );
+    TESTANDSET_MAXTEMP_NCP( 5, 170, MAXTEMP_M2 );
 
-		// M.2
-		Temps[5]->max_temp_counts = AverageTempArray[5];
-		TESTANDSET_MAXTEMP( 5, 16 );
-		TESTANDSET_MAXTEMP( 5, 27 );
-		TESTANDSET_MAXTEMP( 5, 38 );
-		TESTANDSET_MAXTEMP( 5, 49 );
-		TESTANDSET_MAXTEMP( 5, 60 );
-		TESTANDSET_MAXTEMP( 5, 71 );
-		TESTANDSET_MAXTEMP( 5, 82 );
-		TESTANDSET_MAXTEMP( 5, 93 );
-		TESTANDSET_MAXTEMP( 5, 104 );
-		TESTANDSET_MAXTEMP( 5, 115 );
-		TESTANDSET_MAXTEMP( 5, 126 );
-		TESTANDSET_MAXTEMP( 5, 137 );
-		TESTANDSET_MAXTEMP( 5, 148 );
-		TESTANDSET_MAXTEMP( 5, 159 );
-		TESTANDSET_MAXTEMP( 5, 170 );
-        Temps[5]->max_temp = CONVERTTEMP_NCP(Temps[5]->max_temp_counts);
-;
-		// SFF
-		Temps[6]->max_temp_counts = AverageTempArray[114];
-		TESTANDSET_MAXTEMP( 6, 125 );
-		TESTANDSET_MAXTEMP( 6, 136 );
-		TESTANDSET_MAXTEMP( 6, 147 );
-        Temps[6]->max_temp = CONVERTTEMP_NCP(Temps[6]->max_temp_counts);
+    // SFF
+    TESTANDSET_MAXTEMP_NCP_INIT( 6, 114, MAXTEMP_SFF );
+    TESTANDSET_MAXTEMP_NCP( 6, 125, MAXTEMP_SFF );
+    TESTANDSET_MAXTEMP_NCP( 6, 136, MAXTEMP_SFF );
+    TESTANDSET_MAXTEMP_NCP( 6, 147, MAXTEMP_SFF );
 
+    // MEZZ
+    TESTANDSET_MAXTEMP_NCP_INIT( 7, 98, MAXTEMP_MEZZ );
+    TESTANDSET_MAXTEMP_NCP( 7, 109, MAXTEMP_MEZZ );
 
-		// MEZZ
-		Temps[7]->max_temp_counts = AverageTempArray[98];
-		TESTANDSET_MAXTEMP( 7, 109 );
-        Temps[7]->max_temp = CONVERTTEMP_NCP(Temps[7]->max_temp_counts);
+    // Board
+    TESTANDSET_MAXTEMP_NCP_INIT( 8, 6, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 7, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 17, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 18, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 28, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 29, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 39, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 40, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 50, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 51, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 61, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 62, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 72, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 73, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 83, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 84, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 94, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 95, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 97, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 105, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 106, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 108, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 116, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 117, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 119, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 127, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 128, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 130, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 138, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 139, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 141, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 149, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 150, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 152, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 160, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 161, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 163, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 171, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 172, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_NCP( 8, 174, MAXTEMP_MISC );
 
-		// Board
-		Temps[8]->max_temp_counts = AverageTempArray[6];
-		TESTANDSET_MAXTEMP( 8, 7 );
-		TESTANDSET_MAXTEMP( 8, 17 );
-		TESTANDSET_MAXTEMP( 8, 18 );
-		TESTANDSET_MAXTEMP( 8, 28 );
-		TESTANDSET_MAXTEMP( 8, 29 );
-		TESTANDSET_MAXTEMP( 8, 39 );
-		TESTANDSET_MAXTEMP( 8, 40 );
-		TESTANDSET_MAXTEMP( 8, 50 );
-		TESTANDSET_MAXTEMP( 8, 51 );
-		TESTANDSET_MAXTEMP( 8, 61 );
-		TESTANDSET_MAXTEMP( 8, 62 );
-		TESTANDSET_MAXTEMP( 8, 72 );
-		TESTANDSET_MAXTEMP( 8, 73 );
-		TESTANDSET_MAXTEMP( 8, 83 );
-		TESTANDSET_MAXTEMP( 8, 84 );
-		TESTANDSET_MAXTEMP( 8, 94 );
-		TESTANDSET_MAXTEMP( 8, 95 );
-		TESTANDSET_MAXTEMP( 8, 97 );
-		TESTANDSET_MAXTEMP( 8, 105 );
-		TESTANDSET_MAXTEMP( 8, 106 );
-		TESTANDSET_MAXTEMP( 8, 108 );
-		TESTANDSET_MAXTEMP( 8, 116 );
-		TESTANDSET_MAXTEMP( 8, 117 );
-		TESTANDSET_MAXTEMP( 8, 119 );
-		TESTANDSET_MAXTEMP( 8, 127 );
-		TESTANDSET_MAXTEMP( 8, 128 );
-		TESTANDSET_MAXTEMP( 8, 130 );
-		TESTANDSET_MAXTEMP( 8, 138 );
-		TESTANDSET_MAXTEMP( 8, 139 );
-		TESTANDSET_MAXTEMP( 8, 141 );
-		TESTANDSET_MAXTEMP( 8, 149 );
-		TESTANDSET_MAXTEMP( 8, 150 );
-		TESTANDSET_MAXTEMP( 8, 152 );
-		TESTANDSET_MAXTEMP( 8, 160 );
-		TESTANDSET_MAXTEMP( 8, 161 );
-		TESTANDSET_MAXTEMP( 8, 163 );
-		TESTANDSET_MAXTEMP( 8, 171 );
-		TESTANDSET_MAXTEMP( 8, 172 );
-		TESTANDSET_MAXTEMP( 8, 174 );
-        Temps[8]->max_temp = CONVERTTEMP_NCP(Temps[8]->max_temp_counts);
+    // Air
+    TESTANDSET_MAXTEMP_JT_INIT( 9, 9, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 10, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 20, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 21, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 31, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 32, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 42, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 43, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 53, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 54, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 64, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 65, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 75, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 76, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 86, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 87, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 96, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 107, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 118, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 129, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 140, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 151, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 162, MAXTEMP_MISC );
+    TESTANDSET_MAXTEMP_JT( 9, 173, MAXTEMP_MISC );
 
-		// Air
-		Temps[9]->max_temp_counts = AverageTempArray[9];
-		TESTANDSET_MAXTEMP( 9, 10 );
-		TESTANDSET_MAXTEMP( 9, 20 );
-		TESTANDSET_MAXTEMP( 9, 21 );
-		TESTANDSET_MAXTEMP( 9, 31 );
-		TESTANDSET_MAXTEMP( 9, 32 );
-		TESTANDSET_MAXTEMP( 9, 42 );
-		TESTANDSET_MAXTEMP( 9, 43 );
-		TESTANDSET_MAXTEMP( 9, 53 );
-		TESTANDSET_MAXTEMP( 9, 54 );
-		TESTANDSET_MAXTEMP( 9, 64 );
-		TESTANDSET_MAXTEMP( 9, 65 );
-		TESTANDSET_MAXTEMP( 9, 75 );
-		TESTANDSET_MAXTEMP( 9, 76 );
-		TESTANDSET_MAXTEMP( 9, 86 );
-		TESTANDSET_MAXTEMP( 9, 87 );
-		TESTANDSET_MAXTEMP( 9, 96 );
-		TESTANDSET_MAXTEMP( 9, 107 );
-		TESTANDSET_MAXTEMP( 9, 118 );
-		TESTANDSET_MAXTEMP( 9, 129 );
-		TESTANDSET_MAXTEMP( 9, 140 );
-		TESTANDSET_MAXTEMP( 9, 151 );
-		TESTANDSET_MAXTEMP( 9, 162 );
-		TESTANDSET_MAXTEMP( 9, 173 );
-        Temps[9]->max_temp = CONVERTTEMP_JT(Temps[9]->max_temp_counts);
+    //Find the Max Overall Temperature
+    max_temp = Temps[0].max_temp;
+    for (i =0 ;i <  NUM_TEMPS; i++){
+        if(Temps[i].max_temp > max_temp)
+            max_temp = Temps[i].max_temp;
+    }
 
-        //Find the Max Overall Temperature
-        max_temp = Temps[0]->max_temp;
-        for (i =0 ;i <  NUM_TEMPS; i++){
-            if(Temps[i]->max_temp > max_temp)
-                max_temp = Temps[i]->max_temp;
+    //Verify all temps are within spec.
+    err = 0;
+    for(i =0; i < NUM_TEMPS; i++){
+        if(Temps[i].flagged){
+            #ifdef DEBUG_TEMPS
+            switch (i){
+            case 0: { printf("ProcessTemps():: Flagging CPU1 with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 1: { printf("ProcessTemps():: Flagging CPU2 with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 2: { printf("ProcessTemps():: Flagging MISC with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 3: { printf("ProcessTemps():: Flagging RAM with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 4: { printf("ProcessTemps():: Flagging DIMM_GRP with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 5: { printf("ProcessTemps():: Flagging M2_GRP with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 6: { printf("ProcessTemps():: Flagging SFF_GRP with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 7: { printf("ProcessTemps():: Flagging MEZZ with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 8: { printf("ProcessTemps():: Flagging BOARD with Overtemp = %d\n", Temps[i].max_temp); break; }
+            case 9: { printf("ProcessTemps():: Flagging AIR with Overtemp = %d\n", Temps[i].max_temp); break; }
+            }
+            #endif
+            err += ( 1 << i );
         }
-
-		//Verify all temps are within spec.
-		err = 0;
-        if(Temps[0]->max_temp > RHU1_TEMP_MAX_LIMIT){
-            #ifdef DEBUG_TEMPS
-                printf("ProcessTemps():: Flagging CPU1 with Overtemp = %d\n", Temps[0]->max_temp);
-            #endif
-            err = 0x1;
-        }
-
-        if(Temps[1]->max_temp > RHU2_TEMP_MAX_LIMIT){
-            #ifdef DEBUG_TEMPS
-                printf("ProcessTemps():: Flagging CPU2 with Overtemp = %d\n", Temps[1]->max_temp);
-            #endif
-            err += 0x2;
-        }
-
-        //Remaining RHUs
-	    for(i =2; i < RHU_COUNT; i++){
-	        if(Temps[i]->max_temp > RHU_TEMP_MAX_LIMIT){
-                #ifdef DEBUG_TEMPS
-	            switch (i){
-	            case 2: { printf("ProcessTemps():: Flagging MISC with Overtemp = %d\n", Temps[i]->max_temp); break; }
-	            case 3: { printf("ProcessTemps():: Flagging RAM with Overtemp = %d\n", Temps[i]->max_temp); break; }
-	            case 4: { printf("ProcessTemps():: Flagging DIMM_GRP with Overtemp = %d\n", Temps[i]->max_temp); break; }
-	            case 5: { printf("ProcessTemps():: Flagging M2_GRP with Overtemp = %d\n", Temps[i]->max_temp); break; }
-	            case 6: { printf("ProcessTemps():: Flagging SFF_GRP with Overtemp = %d\n", Temps[i]->max_temp); break; }
-	            case 7: { printf("ProcessTemps():: Flagging MEZZ with Overtemp = %d\n", Temps[i]->max_temp); break; }
-	            }
-                #endif
-	            err += ( 1 << i );
-	        }
-	    }
-
-
-	    //Board
-	    if(Temps[8]->max_temp > BOARD_TEMP_MAX_LIMIT)
-	    {
-            #ifdef DEBUG_TEMPS
-                printf("ProcessTemps():: Flagging BOARD with Overtemp = %d\n", Temps[8]->max_temp);
-            #endif
-	        err += ( 1 << 8 );
-	    }
-
-	    //Air
-	    if(Temps[9]->max_temp > AIR_TEMP_MAX_LIMIT)
-	    {
-            #ifdef DEBUG_TEMPS
-                printf("ProcessTemps():: Flagging AIR with Overtemp = %d\n", Temps[9]->max_temp);
-            #endif
-	        err += ( 1 << 9 );
-	    }
-
-        #ifdef DEBUG_TEMPS
-            printf("ProcessTemps():: Returning err="PRINTF_BINSTR16"\n", PRINTF_BINSTR16_ARGS(err));
-        #endif
+    }
 
     #ifdef DEBUG_TEMPS
+    printf("ProcessTemps():: Returning err="PRINTF_BINSTR16"\n", PRINTF_BINSTR16_ARGS(err));
+
     if (err){
         for (i =0; i < 176; i++){
-            switch(i){
-            case 55:
-            case 110:{
-                printf("ProcessTemps():: IDX %d, temp = %d\n", i,CONVERTTEMP_SC30(AverageTempArray[i]) );
-                break;
-            }
-            default:
-                printf("ProcessTemps():: IDX %d, temp = %d\n", i,CONVERTTEMP_NCP(AverageTempArray[i]) );
-            }
+            printf("ProcessTemps():: IDX %d, temp = %d\n", i, temps_bySensor[i] );
         }
     }
     #endif
 
-		return err;
-	}else{
-	    return 0;
-	}
+    return err;
+
 }
 
 //Thermistor temperature converter
@@ -420,17 +368,6 @@ uint16_t ConvertTemp_Generic(uint16_t counts_, double beta_, double r_inf_)
 
 void InitTemp(void)
 {
-	int i = 0;
 
-	while(i<NUM_TEMPS)
-	{
-		Temps[i]->led_state = 0;
-		Temps[i]->ntc_error = 0;
-		Temps[i]->watchdog_flagged = 0;
-		Temps[i]->wd_flag_time = 0;
-		Temps[i]->rhu_type = 0;
-		i++;
-	}
-	Temps[9]->rhu_type = 1;
 }
 
