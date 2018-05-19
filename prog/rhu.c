@@ -280,12 +280,14 @@ void RHU_EStopRHU(void)
 
 	int i = 0;
 
-    RHU_Disable48V();
-
     //all duty cycles to 0
 	for (i = 0; i < RHU_COUNT; i++){
 	    RHU_DisableRHU(i);
 	}
+
+	//Hold for a second and _then_ bring down the 48v relays
+	DELAY_US(1000000);
+    RHU_Disable48V();
 }
 
 #define READDUTY(a_,b_) ( ExtGpioRead(a_) ? 0x02 : 0 ) +  ( ExtGpioRead(b_) ? 0x01 : 0 )
