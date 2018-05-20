@@ -133,15 +133,15 @@
 //	Temps for the various sensors (heaters do not share the same restrictions, neither do the VRM resistors are they're generally hardier on a board)
 ////////////////////////////////////////
 
-#define MAXTEMP_KAPTONHTR   1050
-#define MAXTEMP_VRM         850
-#define MAXTEMP_CPU         700
-#define MAXTEMP_RAM         700
-#define MAXTEMP_DIMM        700
-#define MAXTEMP_M2          700
-#define MAXTEMP_SFF         700
-#define MAXTEMP_MEZZ        700
-#define MAXTEMP_MISC        700
+#define     MAXTEMP_KAPTONHTR           1050
+#define     MAXTEMP_VRM                 850
+#define     MAXTEMP_CPU                 700
+#define     MAXTEMP_RAM                 700
+#define     MAXTEMP_DIMM                700
+#define     MAXTEMP_M2                  700
+#define     MAXTEMP_SFF                 700
+#define     MAXTEMP_MEZZ                700
+#define     MAXTEMP_MISC                700
 
 #define 	PTC_DAMAGED_THRESHOLD_L 	80 			// raw ADC value that indicates a damaged permanent PTC
 #define 	PTC_DAMAGED_THRESHOLD_U 	4000 		// raw ADC value that indicates a damaged permanent PTC

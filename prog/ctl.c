@@ -210,7 +210,7 @@ re_enter:
         //PRE INIT - Temps not ready, this really shouldn't happen...; try once more
         if ( retry ){
             #ifdef DEBUG_CTL
-            printf("CTL_PreInit():: Temps not ready after retry, calling HardSTOP\n" );
+            printf("CTL_PreInit():: Temps not ready after retry, calling CTL_HardSTOP()\n" );
             #endif
 
              //Hard Stop
@@ -331,7 +331,7 @@ void CTL_Init(void){
         case RHU_ABORT: {
             /*Fail on an RHU of some form, this will probably never be returned but it's an abort anyway*/
             #ifdef DEBUG_CTL
-            printf("CTL_Init():: RHU %d ABORT\n", rhu );
+            printf("CTL_Init():: RHU %d ABORT, calling CTL_HardSTOP()\n", rhu );
             #endif
 
             LED_Set(rhu);
@@ -413,6 +413,10 @@ void CTL_Init(void){
             //ELSE board or air overheat
             if ( ret ) LED_Set(LED_TEMP);
 
+
+            #ifdef DEBUG_CTL
+            printf("CTL_Init():: Over temperature error, calling CTL_HardSTOP()\n", i );
+            #endif
             CTL_HardSTOP(INIT_FAIL_STARTUP); //hardstop will never return
         }
 
@@ -498,7 +502,7 @@ void CTL_OnlineCALLBACK(){
         if ( ret ){
             //Watchdog can't help, the problem is elsewhere - shutdown.
             #ifdef DEBUG_CTL
-            printf("CTL_OnlineCALLBACK():: Over temperature error on board or air, bringing down system\n" );
+            printf("CTL_OnlineCALLBACK():: Over temperature error on board or air, calling CTL_HardSTOP()\n" );
             #endif
 
             LED_Set(LED_TEMP);

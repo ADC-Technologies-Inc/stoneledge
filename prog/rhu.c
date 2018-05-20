@@ -153,7 +153,7 @@ void RHU_VerifyRHU(uint16_t fail_msg_)
 
 	int i = 0;
 
-	for(i=0; i < RHU_COUNT; i++){
+	for( i=0; i < RHU_COUNT; i++ ){
 	    //nb. we turn on has_power when we enable to ensure we don't get caught out by ControlLoop calling this before RHU_PWMCallback() has had a chance to be called
 	    ASSERT( (rhu_state[i].en) ? rhu_state[i].duty : 1 );
 
@@ -169,6 +169,10 @@ void RHU_VerifyRHU(uint16_t fail_msg_)
 	}
 
 	if (flag_hardstop){
+        #ifdef DEBUG_RHU
+        printf("RHU_VerifyRHU():: Hardstop flagged, calling CTL_HardSTOP()\n", i );
+        #endif
+
         LED_Set(LED_TCO);
 	    CTL_HardSTOP(fail_msg_);
 	}
@@ -374,6 +378,10 @@ void RHU_Watchdog_FAIL(uint16_t rhu_){
     if ( !rhu_state[rhu_].en ){
 
          //not enabled, the problem isn't going to be solved by turning off this RHU, a neighbor might be too hot?
+        #ifdef DEBUG_RHU
+        printf("RHU_Watchdog_FAIL():: Overheating RHU not ONLINE, calling CTL_HardSTOP()\n", rhu_ );
+        #endif
+
         LED_Set(rhu_);
         CTL_HardSTOP(FAIL_OVERHEAT_RHU_NOT_ON);
     }
@@ -450,9 +458,14 @@ void RHU_Watchdog_Service(){
                     rhu_state[i].watchdog = 0;
                     wd_active--;
                     LED_Clear(i);
+                    break;
                 }
             case RHU_ABORT:{
                     //Abort. Danger Will Robinson, Abort Abort.
+                    #ifdef DEBUG_RHU
+                    printf("RHU_Watchdog_FAIL():: RHU_EnableRHU_RAMP() returned RHU_ABORT, calling CTL_HardSTOP()\n" );
+                    #endif
+
                     CTL_HardSTOP(FAIL_RAMP); //hardstop will never return
                     break;
                 }
@@ -460,7 +473,10 @@ void RHU_Watchdog_Service(){
             case RHU_DISABLED_BY_SWITCH:
             case RHU_DISABLED:{
                     //this is an error, shouldn't happen
+                    #ifdef DEBUG_RHU
                     printf("RHU_Watchdog_Service():: BUG - Disabled RHU being in watchdog\n");
+                    #endif
+
                     break;
                 }
 #endif
