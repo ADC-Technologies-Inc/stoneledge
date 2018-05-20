@@ -56,7 +56,13 @@ void RHU_Enable48V(void){
 	GpioDataRegs.GPBSET.bit.GPIO40 = 0x01;
 }
 
-/*Turn on the 48v part of the board (RHUs)*/
+/*
+ * Turn on the 48v part of the board (RHUs)
+ *
+ * WARNING: DO NOT DISABLE 48V WHILE DUTY-CYCLES ARE ACTIVE, REDUCE DUTY-CYCLES TO 0 FIRST TO PREVENT DAMAGE TO RELAYS
+ *
+ * */
+
 void RHU_Disable48V(void)
 {
 #ifdef DEBUG_RHU

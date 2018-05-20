@@ -16,6 +16,7 @@ void Pause()
 }
 
 int main(void)
+
 {
 	memCopy((unsigned int *) &RamfuncsLoadStart,
 			(unsigned int *) &RamfuncsLoadEnd,
