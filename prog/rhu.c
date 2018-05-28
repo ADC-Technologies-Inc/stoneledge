@@ -29,11 +29,11 @@ struct rhu_state__{
 //===========================================================================
 
 #ifdef LOW_DUTY_MODE    //5%, 7.5%, 10%
-const static uint16_t DUTY_TABLE[4] = {0, 500, 750, 1000};
-const static uint16_t RAMP_TABLE[4] = {0, 100, 150, 200 };
+const static uint16_t DUTY_TABLE[4] = {0, 400, 600, 1000};
+const static uint16_t RAMP_TABLE[4] = {0, 80, 120, 200 };
 #else                   //50%, 75%, 100%
-const static uint16_t DUTY_TABLE[4] = {0, 5000, 7500, 10000};
-const static uint16_t RAMP_TABLE[4] = {0, 1000, 1500, 2000 };
+const static uint16_t DUTY_TABLE[4] = {0, 4000, 6000, 10000};
+const static uint16_t RAMP_TABLE[4] = {0, 800, 1200, 2000 };
 #endif
 
 static struct rhu_state__ rhu_state[RHU_COUNT] = {{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
@@ -339,18 +339,9 @@ void RHU_Init(void)
     SETDUTY(304, 305, 2)
     #endif
 
-	// RHU 4 - RAM, we have a hardware problem with the on-board RAM, hard setting duty to prevent overheat (engineering fail, Niall fail not Thermal Rail fail)
+	// RHU 4 - RAM
     #if USE_RHU_4
-
-    //SETDUTY(306, 307, 3)
-    temp_duty = READDUTY(306, 307);
-    if (temp_duty != 0 ){
-        rhu_state[3].duty = 4000;
-        rhu_state[3].ramp_inc = 800;
-    }else{
-        rhu_state[3].duty = 0;
-        rhu_state[3].ramp_inc = 0;
-    }
+    SETDUTY(306, 307, 3)
     #endif
 
     // RHU 5 - DIMMs

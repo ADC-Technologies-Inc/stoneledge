@@ -323,7 +323,11 @@ void CTL_Init(void){
             printf("CTL_Init():: RHU %d at Full Power, moving on\n", rhu );
             #endif
 
+            #ifdef SHOW_DUTY
             LcdPostStaticRamp( RAMP_RHU1+rhu, RHU_GetSetDutyPerc(rhu) );
+            #else
+            LcdPostStaticRamp( RAMP_RHU1+rhu, 100 );
+            #endif
 
             rhu++;
             break;
