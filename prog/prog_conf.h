@@ -144,7 +144,7 @@
 #define     MAXTEMP_M2                  700
 #define     MAXTEMP_SFF                 690
 #define     MAXTEMP_MEZZ                700
-#define     MAXTEMP_MISC                850         //misc board components
+#define     MAXTEMP_MISC                900         //misc board components
 
 #define 	PTC_DAMAGED_THRESHOLD_L 	80 			// raw ADC value that indicates a damaged permanent PTC
 #define 	PTC_DAMAGED_THRESHOLD_U 	4000 		// raw ADC value that indicates a damaged permanent PTC
