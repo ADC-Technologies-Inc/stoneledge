@@ -192,7 +192,7 @@ void CheckI2CHold(void)
 }
 
 void I2C_ResetBus(void){
-    static int int since_reinit = 0;
+    static int since_reinit = 0;
     uint16_t i = 0;
 
     //Do a hard Re-initialize
