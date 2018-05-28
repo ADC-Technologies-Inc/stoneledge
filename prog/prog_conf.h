@@ -103,7 +103,7 @@
 // Enables
 
 //#define 	USE_ETHERNET 	1						// uncomment to bring ethernet online (not ready)
-//#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
+#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
 													// new duty cycles settings are 0, 5%, 7.5%, 10%
 #define     IGNORE_48VFUSE  1                         // uncomment to ignore a disconnected 48v fuse
 
