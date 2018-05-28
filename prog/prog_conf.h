@@ -142,7 +142,7 @@
 #define     MAXTEMP_RAM                 700
 #define     MAXTEMP_DIMM                700
 #define     MAXTEMP_M2                  700
-#define     MAXTEMP_SFF                 700
+#define     MAXTEMP_SFF                 690
 #define     MAXTEMP_MEZZ                700
 #define     MAXTEMP_MISC                850         //misc board components
 
