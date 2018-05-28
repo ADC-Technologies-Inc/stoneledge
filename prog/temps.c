@@ -280,7 +280,7 @@ int ProcessTempData(void)
     TESTANDSET_MAXTEMP_NCP( 8, 161, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_NCP( 8, 163, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_NCP( 8, 171, MAXTEMP_MISC );
-    TESTANDSET_MAXTEMP_NCP( 8, 172, MAXTEMP_MISC );
+    //TESTANDSET_MAXTEMP_NCP( 8, 172, MAXTEMP_MISC );   //disabled as this thermistor is a: not cooled, and b: adjacent to CPU1
     TESTANDSET_MAXTEMP_NCP( 8, 174, MAXTEMP_MISC );
 
     // Air
