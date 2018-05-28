@@ -324,42 +324,44 @@ void RHU_Init(void)
 {
 	uint16_t temp_duty;
 
-	// RHU 1
+	// RHU 1 - CPU1
     #if USE_RHU_1
 	SETDUTY(300, 301, 0)
     #endif
 
-	// RHU 2
+	// RHU 2 - CPU2
     #if USE_RHU_2
 	SETDUTY(302, 303, 1)
     #endif
 
-	// RHU 3
+	// RHU 3 - MISC IC
     #if USE_RHU_3
     SETDUTY(304, 305, 2)
     #endif
 
-	// RHU 4
+	// RHU 4 - RAM, we have a hardware problem with the on-board RAM, hard setting duty to prevent overheat (engineering fail, Niall fail not Thermal Rail fail)
     #if USE_RHU_4
-    SETDUTY(306, 307, 3)
+    rhu_state[3].duty = 4000;
+    rhu_state[3].ramp_inc = 800;
+    //SETDUTY(306, 307, 3)
     #endif
 
-    // RHU 5
+    // RHU 5 - DIMMs
     #if USE_RHU_5
     SETDUTY(400, 401, 4)
     #endif
 
-    // RHU 6
+    // RHU 6 - M.2
     #if USE_RHU_6
     SETDUTY(402, 403, 5)
     #endif
 
-    // RHU 7
+    // RHU 7 - SFF
     #if USE_RHU_7
     SETDUTY(404, 405, 6)
     #endif
 
-    // RHU 8
+    // RHU 8 - Mezz
     #if USE_RHU_8
     SETDUTY(406, 407, 7)
     #endif

@@ -108,6 +108,8 @@
 //#define     SHOW_DUTY       1                       // shows the duty % instead of the % towards ramping completion on the LCD
 //#define     IGNORE_48VFUSE  1                       // uncomment to ignore a disconnected 48v fuse
 
+#define     DISABLE_AIR 1                           //uncomment to allow the external temp sensor groups to disable the heaters
+
 
 #define 	USE_RHU_1 	1 							// set to 0 to disabled RHU
 #define 	USE_RHU_2 	1 							//
@@ -142,7 +144,7 @@
 #define     MAXTEMP_M2                  700
 #define     MAXTEMP_SFF                 700
 #define     MAXTEMP_MEZZ                700
-#define     MAXTEMP_MISC                700
+#define     MAXTEMP_MISC                800         //misc board components
 
 #define 	PTC_DAMAGED_THRESHOLD_L 	80 			// raw ADC value that indicates a damaged permanent PTC
 #define 	PTC_DAMAGED_THRESHOLD_U 	4000 		// raw ADC value that indicates a damaged permanent PTC

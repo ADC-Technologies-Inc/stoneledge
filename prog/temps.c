@@ -284,6 +284,7 @@ int ProcessTempData(void)
     TESTANDSET_MAXTEMP_NCP( 8, 174, MAXTEMP_MISC );
 
     // Air
+#ifndef DISABLE_AIR
     TESTANDSET_MAXTEMP_JT_INIT( 9, 9, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_JT( 9, 10, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_JT( 9, 20, MAXTEMP_MISC );
@@ -308,6 +309,7 @@ int ProcessTempData(void)
     TESTANDSET_MAXTEMP_JT( 9, 151, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_JT( 9, 162, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_JT( 9, 173, MAXTEMP_MISC );
+#endif
 
     //Find the Max Overall Temperature
     max_temp = Temps[0].max_temp;
