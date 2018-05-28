@@ -56,6 +56,10 @@ uint16_t GetTempDataSingle(uint16_t rhu_)
     switch(rhu_){
     case 0: return temps_bySensor[55];
     case 1: return temps_bySensor[110];
+    case 2:{
+            //MISCIC, return the larger of sensor 89 or 100
+            return ( temps_bySensor[89] > temps_bySensor[100] ) ? temps_bySensor[89] : temps_bySensor[100];
+        }
     }
 
     return Temps[rhu_].max_temp;

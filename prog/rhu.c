@@ -211,7 +211,7 @@ void RHU_EnableRHU(uint16_t rhu_)
  * RHU_DISABLED_BY_SWITCH      //Duty switch is off
  * RHU_DISABLED                //Disabled in software
  *
- * otherwise return is percentage of duty set
+ * otherwise return is percentage of ramp complete
  *
  */
 int RHU_EnableRHU_RAMP(uint16_t rhu_){
@@ -267,7 +267,14 @@ int RHU_EnableRHU_RAMP(uint16_t rhu_){
     //Are we now at full power?
     if (rhu_state[rhu_].ramp == rhu_state[rhu_].duty) return RHU_FULLPOWER;
 
+
+#ifdef SHOW_DUTY
+    //Show duty shows the duty-cycle setting when ramping
     return rhu_state[rhu_].ramp / PERCCONV_DIV;
+#else
+    //Show instead the % towards the configured power
+    return (rhu_state[rhu_].ramp / rhu_state[rhu_].ramp_inc) * 20;
+#endif
 }
 
 void RHU_DisableRHU(uint16_t rhu_)
