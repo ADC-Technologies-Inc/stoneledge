@@ -192,7 +192,14 @@ void CheckI2CHold(void)
 }
 
 void I2C_ResetBus(void){
+    static int int since_reinit = 0;
     uint16_t i = 0;
+
+    //Do a hard Re-initialize
+    if (since_reinit++ == 3){
+        I2C_Init();
+        since_reinit = 0;
+    }
 
     //Reset clock.data lines as GPIO
     #ifdef I2C_DEBUG
