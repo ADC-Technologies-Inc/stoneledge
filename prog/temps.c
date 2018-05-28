@@ -309,6 +309,9 @@ int ProcessTempData(void)
     TESTANDSET_MAXTEMP_JT( 9, 151, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_JT( 9, 162, MAXTEMP_MISC );
     TESTANDSET_MAXTEMP_JT( 9, 173, MAXTEMP_MISC );
+#else
+    Temps[9].flagged = 0;
+    Temps[9].max_temp = 0;
 #endif
 
     //Find the Max Overall Temperature

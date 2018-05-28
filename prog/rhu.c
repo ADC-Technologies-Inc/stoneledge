@@ -341,9 +341,16 @@ void RHU_Init(void)
 
 	// RHU 4 - RAM, we have a hardware problem with the on-board RAM, hard setting duty to prevent overheat (engineering fail, Niall fail not Thermal Rail fail)
     #if USE_RHU_4
-    rhu_state[3].duty = 4000;
-    rhu_state[3].ramp_inc = 800;
+
     //SETDUTY(306, 307, 3)
+    temp_duty = READDUTY(306, 307);
+    if (temp_duty != 0 ){
+        rhu_state[3].duty = 4000;
+        rhu_state[3].ramp_inc = 800;
+    }else{
+        rhu_state[3].duty = 0;
+        rhu_state[3].ramp_inc = 0;
+    }
     #endif
 
     // RHU 5 - DIMMs

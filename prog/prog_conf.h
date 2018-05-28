@@ -138,7 +138,7 @@
 
 #define     MAXTEMP_KAPTONHTR           1050
 #define     MAXTEMP_VRM                 850
-#define     MAXTEMP_CPU                 700
+#define     MAXTEMP_CPU                 800
 #define     MAXTEMP_RAM                 700
 #define     MAXTEMP_DIMM                700
 #define     MAXTEMP_M2                  700
