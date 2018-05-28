@@ -139,11 +139,11 @@
 #define     MAXTEMP_KAPTONHTR           1050
 #define     MAXTEMP_VRM                 950
 #define     MAXTEMP_CPU                 800
-#define     MAXTEMP_RAM                 700
-#define     MAXTEMP_DIMM                700
-#define     MAXTEMP_M2                  700
-#define     MAXTEMP_SFF                 690
-#define     MAXTEMP_MEZZ                700
+#define     MAXTEMP_RAM                 800
+#define     MAXTEMP_DIMM                800
+#define     MAXTEMP_M2                  800
+#define     MAXTEMP_SFF                 800
+#define     MAXTEMP_MEZZ                800
 #define     MAXTEMP_MISC                900         //misc board components
 
 #define 	PTC_DAMAGED_THRESHOLD_L 	80 			// raw ADC value that indicates a damaged permanent PTC
