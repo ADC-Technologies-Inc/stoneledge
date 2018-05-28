@@ -10,8 +10,9 @@
 // Includes
 //===========================================================================
 #include "../HW/Analog.h"
+#include "DSP2803x_Examples.h"
 
-#include "stdio.h"
+#include "../prog/ntd_debug.h"
 //===========================================================================
 // Defines
 //===========================================================================
@@ -22,7 +23,8 @@
 // ISR Prototypes
 //===========================================================================
 
-__interrupt void adc_isr(void);
+__interrupt void adc_isr_complete(void);
+__interrupt void  adc_isr_switchref(void);
 
 #pragma CODE_SECTION(adc_isr, "ramfuncs");
 
@@ -156,14 +158,16 @@ uint16_t* GetAnalogAddress(uint16_t req_)
 
 void ADCISREn(void)
 {
-    PieCtrlRegs.PIEIER1.bit.INTx1 = 1;					// Enable INT 1.1 in the PIE
+    PieCtrlRegs.PIEIER1.bit.INTx1 = 1;					// Enable INT 1.1 in the PIE, for switching the baseref
+    PieCtrlRegs.PIEIER1.bit.INTx2 = 1;                  // Enable INT 1.2 for completing the averaging
     IER |= M_INT1; 										// Enable CPU Interrupt 1
 }
 
 void ADCISRMap(void)
 {
 	EALLOW;
-    PieVectTable.ADCINT1 = &adc_isr;
+    PieVectTable.ADCINT1 = &adc_isr_switchref;
+    PieVectTable.ADCINT2 = &adc_isr_complete;
     EDIS;
 }
 
@@ -192,13 +196,17 @@ void ConfigADC()
    AdcRegs.ADCINTSOCSEL2.bit.SOC15 = 0;
 
    AdcRegs.ADCCTL1.bit.INTPULSEPOS	= 1;		// ADCINT1 trips after AdcResults latch
-   AdcRegs.ADCCTL1.bit.ADCREFSEL 	= 1;
+   AdcRegs.ADCCTL1.bit.ADCREFSEL 	= 1;        //initially set the reference to VREFHI/VREFLO
 
    AdcRegs.ADCCTL2.bit.ADCNONOVERLAP = 1;
 
-   AdcRegs.INTSEL1N2.bit.INT1E      = 1;		// Enabled ADCINT1
-   AdcRegs.INTSEL1N2.bit.INT1CONT   = 0;		// Disable ADCINT1 Continuous mode
-   AdcRegs.INTSEL1N2.bit.INT1SEL	= 0x0C;		// setup EOC12 to trigger ADCINT1 to fire
+   AdcRegs.INTSEL1N2.bit.INT1E      = 1;     // Enabled ADCINT1
+   AdcRegs.INTSEL1N2.bit.INT1CONT   = 0;        // Disable ADCINT1 Continuous mode
+   AdcRegs.INTSEL1N2.bit.INT1SEL    = 0x0B;     // setup EOC11 to trigger ADCINT2 to fire
+
+   AdcRegs.INTSEL1N2.bit.INT2E      = 1;		// Enabled ADCINT2
+   AdcRegs.INTSEL1N2.bit.INT2CONT   = 0;		// Disable ADCINT2 Continuous mode
+   AdcRegs.INTSEL1N2.bit.INT2SEL	= 0x0C;		// setup EOC12 to trigger ADCINT2 to fire
 
    //This sample is discarded
    AdcRegs.ADCSOC0CTL.bit.CHSEL 	= 0x00;		// set SOC0 channel select to ADCINA0(dummy sample for rev0 errata workaround)
@@ -217,7 +225,7 @@ void ConfigADC()
    AdcRegs.ADCSOC11CTL.bit.CHSEL 	= 0x0A; 	// set SOC11 channel select to ADCINB2
    AdcRegs.ADCSOC12CTL.bit.CHSEL 	= 0x0F; 	// set SOC13 channel select to ADCINB7
 
-   //all are triggered by ePWM5
+   //all but 12 are triggered by ePWM5
    AdcRegs.ADCSOC0CTL.bit.TRIGSEL 	= 0x0D;		//set SOC0 start trigger on EPWM1 SOCA, due to round-robin SOC0 converts first then SOC1, then SOC3
    AdcRegs.ADCSOC1CTL.bit.TRIGSEL 	= 0x0D;		//set SOC1 start trigger on EPWM1 SOCA, due to round-robin SOC0 converts first then SOC1, then SOC3
    AdcRegs.ADCSOC2CTL.bit.TRIGSEL 	= 0x0D;
@@ -230,7 +238,7 @@ void ConfigADC()
    AdcRegs.ADCSOC9CTL.bit.TRIGSEL 	= 0x0D;
    AdcRegs.ADCSOC10CTL.bit.TRIGSEL 	= 0x0D;
    AdcRegs.ADCSOC11CTL.bit.TRIGSEL 	= 0x0D;
-   AdcRegs.ADCSOC12CTL.bit.TRIGSEL 	= 0x0D;
+   AdcRegs.ADCSOC12CTL.bit.TRIGSEL 	= 0x0;      //12 is now triggered by INTSEL1 interrupt telling it to start so that we can change the reference
 
    //22 clock cycles for S/H
    AdcRegs.ADCSOC0CTL.bit.ACQPS 	= 6;
@@ -258,12 +266,28 @@ void ConfigADC()
  * ISRs
  *
  -----------------------------------------------------------------------------------------------------------*/
-__interrupt void  adc_isr(void)
+//Interrupt switches the reference to do channel 12
+__interrupt void  adc_isr_switchref(void){
+    //Switch the reference to internal bandgap for the current reading
+    AdcRegs.ADCCTL1.bit.ADCREFSEL   = 0;
+
+    //hold for a few microseconds to allow the new reference to stabilize
+    DELAY_US(5);
+
+    //initialize channel 12 conversion
+    AdcRegs.ADCSOCFRC1.bit.SOC12 = 1;
+
+    //reset to allow the interrupt to fire again
+    AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;   // Acknowledge interrupt to PIE
+}
+
+__interrupt void  adc_isr_complete(void)
 {
-  //fired by ADCINT1 (which is configured to fire after ADCRESULT12 finishes converting)
+  //set the reference back to VREFHI/VREFLO
+  AdcRegs.ADCCTL1.bit.ADCREFSEL = 1;
 
-
-
+  //fired by ADCINT2 (which is configured to fire after ADCRESULT12 finishes converting)
   AnalogChannels.adcina0[AnalogChannels.adcindex] = AdcResult.ADCRESULT1; //discard ADCRESULT0 as part of the workaround to the 1st sample errata for rev0
   AnalogChannels.adcina1[AnalogChannels.adcindex] = AdcResult.ADCRESULT2;
   AnalogChannels.adcina2[AnalogChannels.adcindex] = AdcResult.ADCRESULT3;
@@ -288,9 +312,8 @@ __interrupt void  adc_isr(void)
 
   }
 
-  AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;		//Clear ADCINT1 flag reinitialize for next SOC
+  AdcRegs.ADCINTFLGCLR.bit.ADCINT2 = 1;		//Clear ADCINT2 flag reinitialize for next SOC
   EPwm5Regs.ETCLR.bit.SOCA = 1;
 
   PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;   // Acknowledge interrupt to PIE
-  //GpioDataRegs.GPACLEAR.bit.GPIO2 = 1;
 }
