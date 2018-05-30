@@ -452,6 +452,9 @@ void GpioSetDirArray(uint16_t pin_array_, uint16_t array_)
     uint16_t ext_gpio_buffer[2];
     uint16_t ext_gpio_rx_buffer[2];
 
+    //save state of pin_array so we can re-init if necessary
+    ext_gpio_state[pin_array_ - 1] = array_;
+
 	ext_gpio_addr = ext_gpio_addrs[pin_array_-1];			// sets address
 	ext_gpio_buffer[0] = CMD_OUTPUT; 						// command 0x01 in place buffer[0] is output high/low read/write
 	ext_gpio_buffer[1] = array_; 							// new high/low pin data

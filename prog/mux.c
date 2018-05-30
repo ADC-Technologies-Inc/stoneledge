@@ -39,25 +39,4 @@ void MUX_Set(uint16_t channel_)
     #endif
 
 	GpioSetDirArray(5,gpio_bits);
-
-	//replacing this to reduce communications overhead
-	/*if(currentMux & BIT0)
-		 ExtGpioSet(507, 1);
-	else
-		 ExtGpioSet(507, 0);
-
-	if(currentMux & BIT1)
-		ExtGpioSet(501, 1);
-	else
-		ExtGpioSet(501, 0);
-
-	if(currentMux & BIT2)
-		ExtGpioSet(502, 1);
-	else
-		ExtGpioSet(502, 0);
-
-	if(currentMux & BIT3)
-		ExtGpioSet(503, 1);
-	else
-		ExtGpioSet(503, 0);*/
 }
