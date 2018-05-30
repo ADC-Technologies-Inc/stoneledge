@@ -12,7 +12,7 @@
 #include "../prog/time.h"
 #include "../HW/I2C.h"
 #include "../HW/IOInit.h"
-#include "../HW../Analog.h"
+#include "../HW/Analog.h"
 
 #define I2CMDR_NACKMOD  0x8000
 #define I2CMDR_FREE     0x4000
