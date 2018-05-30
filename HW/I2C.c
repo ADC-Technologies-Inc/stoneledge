@@ -10,6 +10,7 @@
 #include "DSP28x_Project.h"
 #include "DSP2803x_Examples.h"
 #include "../prog/time.h"
+#include "../HW/I2C.h"
 
 #define I2CMDR_NACKMOD  0x8000
 #define I2CMDR_FREE     0x4000
@@ -44,6 +45,8 @@ static uint16_t tx_count = 0;
 static uint16_t * rx;
 static uint16_t * tx;
 
+//tracker to allow the I2C_ResetBus() to determine if a hard reset is necessary, reset to 0 on every successful tx/rx
+static int reinit_attempts = 0;
 
 void I2C_ISRInit(void)
 {
@@ -135,6 +138,9 @@ void I2C_Init(void)
    //Delay to bring the BB bit into good condition (see section 5.4 of SPRUFZ9D)
    DELAY_US(20);
 
+   //reset
+   reinit_attempts = 0;
+
    //Freedom! (etc)
    return;
 }
@@ -192,14 +198,70 @@ void CheckI2CHold(void)
 }
 
 void I2C_ResetBus(void){
-    static int since_reinit = 0;
+    static int doing_reset = 0;
     uint16_t i = 0;
 
-    //Do a hard Re-initialize
-    if (since_reinit++ == 3){
+    #ifdef DEBUG_I2C
+    printf("I2C_ResetBus():: Attempting to clear bus\n");
+    #endif
+
+    //Do a hard reset
+    if (reinit_attempts++ == 3){
+        if (doing_reset){
+            //this is bad..
+            #ifdef DEBUG_I2C
+            printf("I2C_ResetBus():: Called while already resetting bus, aborting to allow reset to continue\n");
+            #endif
+
+            return;
+        }
+
+        #ifdef DEBUG_I2C
+        printf("I2C_ResetBus():: Performing a hard reset of I2C\n");
+        #endif
+
+        doing_reset = 1;
+
+        //Reset the extGPIO (on GPIO24)
+        I2caRegs.I2CMDR.bit.IRS = 0;            // Bring I2C down first.
+
+        //Reset our I2C lines to a default condition
+        EALLOW;
+        GpioCtrlRegs.GPBMUX1.bit.GPIO32 = 0;    //SDA
+        GpioCtrlRegs.GPBMUX1.bit.GPIO33 = 0;    //SCL
+        EDIS;
+
+        //Set both SDA/SCL low
+        GpioDataRegs.GPBCLEAR.bit.GPIO32 = 1;
+        GpioDataRegs.GPBCLEAR.bit.GPIO33 = 1;
+
+        //reset ext-GPIO
+        GpioDataRegs.GPACLEAR.bit.GPIO24 = 1;
+
+        //hold for at least 16 ns
+        DELAY_US(1);
+
+        //lift reset signal
+        GpioDataRegs.GPASET.bit.GPIO24 = 1;
+
+        //hold for at least 400ns
+        DELAY_US(1);
+
+        //re-initialize I2C
         I2C_Init();
-        since_reinit = 0;
+
+        //re-initialize the extGPIO to the correct state
+        ExtGpioInit();
+
+        reinit_attempts = 0;
+        doing_reset = 0;
+
+        return;
     }
+
+    #ifdef DEBUG_I2C
+    printf("I2C_ResetBus():: Sending 9 clocks cycles down the line\n");
+    #endif
 
     //Reset clock.data lines as GPIO
     #ifdef I2C_DEBUG
@@ -212,10 +274,12 @@ void I2C_ResetBus(void){
     EDIS;
 
     //Send 9 clocks down the line to reset
-    GpioDataRegs.GPBSET.bit.GPIO33 = 1;
+    GpioDataRegs.GPBCLEAR.bit.GPIO32 = 1;
+    GpioDataRegs.GPBCLEAR.bit.GPIO33 = 1;
+
     for (i=0;i<18;i++){
         GpioDataRegs.GPBTOGGLE.bit.GPIO33 = 1;
-        DELAY_US(5000);
+        DELAY_US(1000);
     }
 
     EALLOW;
@@ -333,6 +397,8 @@ exit_:
     IER |= tempIER;
     EINT;
 
+    reinit_attempts = 0;
+
 	//printf("i2c_tx():: I exited!\n");
 	return;
 }
@@ -428,6 +494,8 @@ exit_:
     DINT;
     IER |= tempIER;
     EINT;
+
+    reinit_attempts = 0;
 
     //printf("i2c_tx():: I exited too!\n");
     return;

@@ -64,7 +64,7 @@
 // private variables
 static const uint16_t ext_gpio_addrs[8]    = {GPIO100_ADDR, GPIO200_ADDR, GPIO300_ADDR, GPIO400_ADDR, GPIO500_ADDR, GPIO600_ADDR, GPIO700_ADDR, GPIO800_ADDR};
 static const uint16_t ext_gpio_dir[8]   	= {GPIO_100_INIT_DIR, GPIO_200_INIT_DIR, GPIO_300_INIT_DIR, GPIO_400_INIT_DIR, GPIO_500_INIT_DIR, GPIO_600_INIT_DIR, GPIO_700_INIT_DIR, GPIO_800_INIT_DIR};
-static const uint16_t ext_gpio_state[8] 	= {GPIO_100_INIT_STATE, GPIO_200_INIT_STATE, GPIO_300_INIT_STATE, GPIO_400_INIT_STATE, GPIO_500_INIT_STATE, GPIO_600_INIT_STATE, GPIO_700_INIT_STATE, GPIO_800_INIT_STATE};
+static uint16_t ext_gpio_state[8] 	= {GPIO_100_INIT_STATE, GPIO_200_INIT_STATE, GPIO_300_INIT_STATE, GPIO_400_INIT_STATE, GPIO_500_INIT_STATE, GPIO_600_INIT_STATE, GPIO_700_INIT_STATE, GPIO_800_INIT_STATE};
 
 // private function
 void ExtGpioReadSet(uint16_t pin_set_, uint16_t* read_buffer_);
@@ -233,10 +233,11 @@ void InitGpio_start(void)
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO23 = 0;  // GPIO23 = GPIO23
 	   GpioCtrlRegs.GPADIR.bit.GPIO23 = 1;   // GPIO23 = output
 
-	   // Enable an GPIO input on GPIO24, pullup
+	   // Enable an GPIO input on GPIO24, pullup - GPIO24 is connected to the reset line on the ext GPIO parts
 	   GpioCtrlRegs.GPAPUD.bit.GPIO24 = 1;   // Enable pullup on GPIO24
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO24 = 0;  // GPIO24 = GPIO24
-	   GpioCtrlRegs.GPADIR.bit.GPIO24 = 0;   // GPIO24 = input
+	   GpioCtrlRegs.GPADIR.bit.GPIO24 = 1;   // GPIO24 = output
+	   GpioDataRegs.GPASET.bit.GPIO24 = 1;   // GPIO24 = set high.
 
 	   //
 	   GpioCtrlRegs.GPAPUD.bit.GPIO25 = 1;   // Enable pullup on GPIO25
