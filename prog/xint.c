@@ -12,6 +12,7 @@
 #include "xint.h"
 #include "ctl.h"
 #include "prog_conf.h"
+#include "../prog/time.h"
 
 __interrupt void XINT_eInt1(void);
 
@@ -28,7 +29,7 @@ void XINT_Init( void ){
 
 //Configure and enable the interrupt, call after IOInit has setup
 void XINT_Enable( void ){
-    XIntruptRegs.XINT1CR.bit.POLARITY = 0;
+    XIntruptRegs.XINT1CR.bit.POLARITY = 3;      //interrupt on both falling and rising edge
     XIntruptRegs.XINT1CR.bit.ENABLE = 1;
 
     PieCtrlRegs.PIEIER1.bit.INTx4 = 1;         // Enable PIE Group 1, INT 4 (XINT1)
@@ -37,8 +38,23 @@ void XINT_Enable( void ){
 
 //The interrupt
 __interrupt void XINT_eInt1(void){
-    //Bring the system down with a lovely message (all we really want is to be able to turn it off...)
-    CTL_HardSTOP(RESET_BUTTON);
+    //If the button press lasts more than 2 seconds, we halt- otherwise we ignore it as bounce or a transient
+    static uint32_t press = 0;
+
+    if (press == 0){
+        //Start the counter
+        press = time_ms;
+    }else{
+        //How long was the button held for?
+        if ( (time_ms - press ) < 2000 ){
+            //less than 2s, discard
+            press = 0;
+        }else{
+            //more than 2s, shutdown
+            press = 0;
+            CTL_HardSTOP(RESET_BUTTON);
+        }
+    }
 
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
