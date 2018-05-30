@@ -11,6 +11,7 @@
 #include "DSP2803x_Examples.h"
 #include "../prog/time.h"
 #include "../HW/I2C.h"
+#include "../HW/IOInit.h"
 
 #define I2CMDR_NACKMOD  0x8000
 #define I2CMDR_FREE     0x4000
@@ -145,7 +146,7 @@ void I2C_Init(void)
    return;
 }
 
-void CheckI2CHold(void)
+/*void CheckI2CHold(void)
 {
     static uint32_t i;
     static uint16_t j;
@@ -195,7 +196,7 @@ void CheckI2CHold(void)
     GpioCtrlRegs.GPBQSEL1.bit.GPIO33 = 3;  // Asynch input GPIO29 (SCLA)
     GpioCtrlRegs.GPBMUX1.bit.GPIO33 = 1;   // Configure GPIO29 for SCLA operation
     EDIS;
-}
+}*/
 
 void I2C_ResetBus(void){
     static int doing_reset = 0;
@@ -210,7 +211,7 @@ void I2C_ResetBus(void){
         if (doing_reset){
             //this is bad..
             #ifdef DEBUG_I2C
-            printf("I2C_ResetBus():: Called while already resetting bus, aborting to allow reset to continue\n");
+            printf("I2C_ResetBus():: Called while already resetting bus, aborting to allow reset to continue - this will result in a hang condition, we should probably just reboot everything :o \n");
             #endif
 
             return;

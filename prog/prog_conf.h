@@ -50,6 +50,7 @@
 #define     RAMP_RHU6                   19
 #define     RAMP_RHU7                   20
 #define     RAMP_RHU8                   21
+#define     RESET_BUTTON                22
 
 // RHUs
 

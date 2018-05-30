@@ -217,8 +217,8 @@ void InitGpio_start(void)
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO20 = 0;  // GPIO20 = GPIO20
 	   GpioCtrlRegs.GPADIR.bit.GPIO20 = 0;   // GPIO20 = input
 
-	   // Enable an GPIO input on GPIO21
-	   GpioCtrlRegs.GPAPUD.bit.GPIO21 = 1;   // Disable pullup on GPIO21
+	   // Enable an GPIO input on GPIO21 - used as our reset line to power down the system
+	   GpioCtrlRegs.GPAPUD.bit.GPIO21 = 1;   // Enable pullup on GPIO21
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO21 = 0;  // GPIO21 = GPIO21
 	   GpioCtrlRegs.GPADIR.bit.GPIO21 = 0;   // GPIO21 = input
 

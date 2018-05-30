@@ -13,6 +13,7 @@
 #include "../HW/PWM.h"
 #include "../HW/RealTimeClock.h"
 #include "../HW/SPI.h"
+#include "../prog/xint.h"
 
 //  *IMPORTANT*
 //  IF RUNNING FROM FLASH, PLEASE COPY OVER THE SECTION "ramfuncs"  FROM FLASH
@@ -302,7 +303,8 @@ void InitializeHardware(void)
 	ADCISRMap();							// maps ADC ISR to Analog.c file
 	SPIIsrMap(); 							// maps SPI ISR to SPI.c file
 	I2C_ISRInit(); 							// maps I2C ISR to I2C.c file
-	PWM_MapISR();                            // maps PWM ISR
+	PWM_MapISR();                           // maps PWM ISR
+	XINT_Init();                            // maps XINT ISR
 
     InitAdc();  							// Init the ADC
     InitAdcAio(); 							//
@@ -313,6 +315,7 @@ void InitializeHardware(void)
     SPIIsrEn();
     I2C_ISREn();
     PWM_EnISR();
+    XINT_Enable();                          //enables external interrupt
 
 	InitializeRealTimeClocks();
 

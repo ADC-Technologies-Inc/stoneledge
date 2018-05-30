@@ -43,6 +43,8 @@ const static uint16_t msg_ramp_rhu6[16]                 = {0x4d, 0x2e, 0x32, 0x2
 const static uint16_t msg_ramp_rhu7[16]                 = {0x53, 0x46, 0x46, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "SFF RAMP    xxx%"
 const static uint16_t msg_ramp_rhu8[16]                 = {0x4d, 0x45, 0x5a, 0x5a, 0x20, 0x52, 0x41, 0x4d, 0x50, 0x20, 0x20, 0x20, 0x78, 0x78, 0x78, 0x25}; // "MEZZ RAMP   xxx%"
 
+const static uint16_t msg_reset_button[16]              = {0x4d, 0x41, 0x4e, 0x55, 0x41, 0x4c, 0x20, 0x53, 0x54, 0x4f, 0x50, 0x20, 0x20, 0x20, 0x20, 0x20}; // "MANUAL STOP     "
+
 
 const static uint16_t *lcd_status_messages[22] = {msg_pre_startup
                                                   , msg_startup
@@ -66,6 +68,7 @@ const static uint16_t *lcd_status_messages[22] = {msg_pre_startup
                                                   , msg_ramp_rhu6
                                                   , msg_ramp_rhu7
                                                   , msg_ramp_rhu8
+                                                  , msg_reset_button
                                                     };
 
 static uint16_t msg_rhu_1[16] = {0x43, 0x50, 0x55, 0x31, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x78, 0x78, 0x2e, 0x78, 0x43}; 				// RHU 1 INFO CPU1               "CPU1       xx.xC"
