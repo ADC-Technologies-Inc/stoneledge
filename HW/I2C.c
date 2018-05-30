@@ -12,6 +12,7 @@
 #include "../prog/time.h"
 #include "../HW/I2C.h"
 #include "../HW/IOInit.h"
+#include "../HW../Analog.h"
 
 #define I2CMDR_NACKMOD  0x8000
 #define I2CMDR_FREE     0x4000
@@ -221,6 +222,9 @@ void I2C_ResetBus(void){
         printf("I2C_ResetBus():: Performing a hard reset of I2C\n");
         #endif
 
+        //Let the ADC code know that the channels are unstable and to discard data
+        AnalogDiscard(FLAG_START);
+
         doing_reset = 1;
 
         //Reset the extGPIO (on GPIO24)
@@ -253,6 +257,9 @@ void I2C_ResetBus(void){
 
         //re-initialize the extGPIO to the correct state
         ExtGpioInit();
+
+        //Let the ADC code know that the channels should be stable now
+        AnalogDiscard(FLAG_END);
 
         reinit_attempts = 0;
         doing_reset = 0;

@@ -72,10 +72,53 @@ static struct Analog AnalogChannels;			// holds measured info for motor current 
  *
  -----------------------------------------------------------------------------------------------------------*/
 
+/*Toggle a flag to let the ADC code know that the I2C config changed
+
+#define FLAG_START  1
+#define FLAG_END    0
+
+*/
+int flag_discard_latch = 0;
+int flag_discard = 0;
+
+void AnalogDiscard(uint16_t flag_){
+    ASSERT(flag_ == FLAG_END || flag_ == FLAG_START );
+
+    switch(flag_){
+        case FLAG_START:{
+            flag_discard = 1;
+            flag_discard_latch = 1;
+            break;
+        }
+        case FLAG_END:{
+            flag_discard = 0;
+            break;
+        }
+    }
+}
+
 void ProcessAnalogResult(void)
 {
 	if(AnalogChannels.adcresready == 1)
 	{
+	    if (flag_discard_latch){
+	        //While flag_discard_latch is set the channels are in an unstable condition and can't be used
+
+	        //We don't process the data or change channels, we simply re-enter with the present channel set
+	        AnalogChannels.adcresready = 0;                 // set results to not ready
+	        //AnalogChannels.adcinten = 1;                  // set interrupt to enabled
+	        AnalogChannels.adcindex = 0;                    // set index to 0
+
+	        if (!flag_discard ){
+	            //unset the latch if the discard flag is off which sets us back to normal ops
+	            flag_discard_latch = 0;
+
+	            //this _should_ be redundant, but set the channel to the proper channel again and restart collections
+	            MUX_Set(AnalogChannels.adcmux);
+	        }
+	        return;
+	    }
+
 		ProcessNtcSet(AnalogChannels.adcmux); 			// Average 12x10 samples that are ready and place into averaged PTC result array
 		ProcessCurrentSet(AnalogChannels.adcmux);  		// Process current sense info
 		if(AnalogChannels.adcmux == 15) 				// if this is the 16th ADC MUX channel then set PTC ready

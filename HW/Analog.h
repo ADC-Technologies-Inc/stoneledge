@@ -21,6 +21,11 @@
 //===========================================================================
 // Function Prototypes
 //===========================================================================
+
+#define FLAG_START  1
+#define FLAG_END    0
+void AnalogDiscard(uint16_t flag_);
+
 void ProcessAnalogResult(void);
 void StartAnalog(void);
 void StopAnalog(void);
