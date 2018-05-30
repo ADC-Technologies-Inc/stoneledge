@@ -380,7 +380,7 @@ __interrupt void  PWM_ePWM4_ISR__analog(void)
 	    reset_sw++;
 
 	    //20 = 100ms held
-	    if (reset_sw == 20){
+	    if (reset_sw == 200){
 	        CTL_HardSTOP(RESET_BUTTON);
 	    }
 	}else reset_sw = 0;

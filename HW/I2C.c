@@ -244,7 +244,7 @@ void I2C_ResetBus(void){
         GpioDataRegs.GPACLEAR.bit.GPIO24 = 1;
 
         //hold for at least 16 ns
-        DELAY_US(1);
+        DELAY_US(100);
 
         //lift reset signal
         GpioDataRegs.GPASET.bit.GPIO24 = 1;
@@ -333,7 +333,6 @@ void I2C_Tx(uint16_t *buf_, uint16_t count_, uint16_t addr_)
     uint16_t tempIER = 0;
 
     //CheckI2CHold();
-
 re_enter:
 
     DINT;                           //disable interrupts before we hit the while loop, if we don't we have a potential re-entrancy issue
