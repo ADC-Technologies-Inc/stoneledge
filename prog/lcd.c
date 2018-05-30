@@ -14,8 +14,8 @@ static uint32_t lcd_msg_time = 0;
 static uint16_t lcd_cycle_msg_holder = 0;
 static uint16_t screen_update = 0;
 
-static uint16_t top_row[16];
-static uint16_t bottom_row[16];
+static uint16_t top_row[17];
+static uint16_t bottom_row[17];
 
 const static uint16_t bottom_row_static[16] = {0x50, 0x3A, 0x78, 0x78, 0x78, 0x57, 0x20, 0x4D, 0x41, 0x58, 0x3A, 0x78, 0x78, 0x2E, 0x78, 0x43}; // "P:xxxW MAX:xx.xC"
 
@@ -46,7 +46,7 @@ const static uint16_t msg_ramp_rhu8[16]                 = {0x4d, 0x45, 0x5a, 0x5
 const static uint16_t msg_reset_button[16]              = {0x4d, 0x41, 0x4e, 0x55, 0x41, 0x4c, 0x20, 0x53, 0x54, 0x4f, 0x50, 0x20, 0x20, 0x20, 0x20, 0x20}; // "MANUAL STOP     "
 
 
-const static uint16_t *lcd_status_messages[22] = {msg_pre_startup
+const static uint16_t *lcd_status_messages[23] = {msg_pre_startup
                                                   , msg_startup
                                                   , msg_init_ok
                                                   , msg_delay_startup_fail_therm
@@ -304,6 +304,10 @@ void LcdPostMsgTop(uint16_t msg_)
 		top_row[i] = (lcd_status_messages[msg_])[i];
 		i++;
 	}
+
+#ifdef DEBUG_LCD
+	printf("LcdPostMsgTop():: Posting \"%s\"\n", top_row );
+#endif
 }
 
 void LcdPostMsgCycle(uint16_t msg_)

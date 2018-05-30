@@ -213,12 +213,12 @@ void InitGpio_start(void)
 
 
 	   // Enable an GPIO input on GPIO20, pullup
-	   GpioCtrlRegs.GPAPUD.bit.GPIO20 = 1;   // Enable pullup on GPIO20
+	   GpioCtrlRegs.GPAPUD.bit.GPIO20 = 1;   // Disable pullup on GPIO20
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO20 = 0;  // GPIO20 = GPIO20
 	   GpioCtrlRegs.GPADIR.bit.GPIO20 = 0;   // GPIO20 = input
 
 	   // Enable an GPIO input on GPIO21 - used as our reset line to power down the system
-	   GpioCtrlRegs.GPAPUD.bit.GPIO21 = 1;   // Enable pullup on GPIO21
+	   GpioCtrlRegs.GPAPUD.bit.GPIO21 = 0;   // Enable pullup on GPIO21
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO21 = 0;  // GPIO21 = GPIO21
 	   GpioCtrlRegs.GPADIR.bit.GPIO21 = 0;   // GPIO21 = input
 
@@ -234,13 +234,13 @@ void InitGpio_start(void)
 	   GpioCtrlRegs.GPADIR.bit.GPIO23 = 1;   // GPIO23 = output
 
 	   // Enable an GPIO input on GPIO24, pullup - GPIO24 is connected to the reset line on the ext GPIO parts
-	   GpioCtrlRegs.GPAPUD.bit.GPIO24 = 1;   // Enable pullup on GPIO24
+	   GpioCtrlRegs.GPAPUD.bit.GPIO24 = 1;   // Disable pullup on GPIO24
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO24 = 0;  // GPIO24 = GPIO24
 	   GpioCtrlRegs.GPADIR.bit.GPIO24 = 1;   // GPIO24 = output
 	   GpioDataRegs.GPASET.bit.GPIO24 = 1;   // GPIO24 = set high.
 
 	   //
-	   GpioCtrlRegs.GPAPUD.bit.GPIO25 = 1;   // Enable pullup on GPIO25
+	   GpioCtrlRegs.GPAPUD.bit.GPIO25 = 1;   // Disable pullup on GPIO25
 	   GpioCtrlRegs.GPAMUX2.bit.GPIO25 = 0;  // GPIO25 = GPIO25
 	   GpioCtrlRegs.GPADIR.bit.GPIO25 = 0;   // GPIO25 = input
 

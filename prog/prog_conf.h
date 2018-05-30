@@ -107,7 +107,7 @@
 //#define 	LOW_DUTY_MODE 	1						// uncomment to do limited testing without proper heatsinks
 													// new duty cycles settings are 0, 5%, 7.5%, 10%
 //#define     SHOW_DUTY       1                       // shows the duty % instead of the % towards ramping completion on the LCD
-//#define     IGNORE_48VFUSE  1                       // uncomment to ignore a disconnected 48v fuse
+#define     IGNORE_48VFUSE  1                       // uncomment to ignore a disconnected 48v fuse
 
 #define     DISABLE_AIR 1                           //uncomment to allow the external temp sensor groups to disable the heaters
 
@@ -178,14 +178,14 @@
 
 
 #define DEBUG_I2C                       1           //i2c.c
-#define DEBUG_CTL                       1           //ctl.c
-#define DEBUG_RHU                       1           //RHU.c
+//#define DEBUG_CTL                       1           //ctl.c
+//#define DEBUG_RHU                       1           //RHU.c
 //#define DEBUG_PWM                       1           //PWM.c
 //#define DEBUG_IOINIT                    1           //IOInit.c
 //#define DEBUG_LCD                       1           //LCD.c
 //#define DEBUG_LED                       1           //LED.c
 //#define DEBUG_SYS_ID                    1           //SysID.c
-#define DEBUG_TEMPS                     1           //temps.c*/
+//#define DEBUG_TEMPS                     1           //temps.c*/
 
 
 

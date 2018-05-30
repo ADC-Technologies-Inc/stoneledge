@@ -526,7 +526,7 @@ void CTL_HardSTOP( uint16_t msg_){
     RHU_EStopRHU();                         //bring down 48v subsystem
     LcdPostStatic( msg_ );                  //post message to LCD
     LcdService();
-    LED_Set(LED_ONGOING);                   //set ongoing LED
+    if (msg_ != RESET_BUTTON) LED_Set(LED_ONGOING);                   //set ongoing LED, don't set it for MANUAL_RESET
 
     //Disable interrupts
     DINT;

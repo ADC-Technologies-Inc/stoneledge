@@ -16,7 +16,6 @@
 #include "IQmathLib.h"
 #include "../HW/ModuleConfig.h"
 
-
 //===========================================================================
 // ISR Prototypes
 //===========================================================================
@@ -344,6 +343,7 @@ __interrupt void  PWM_ePWM4_ISR__analog(void)
 {
     static uint16_t event = 0;
     static uint16_t service = 0;
+    static uint16_t reset_sw = 0;
 
 	////
 	// 	changes to PIEIER1 and PIEIER8 cannot happen inside this ISR (group 3) so changes to them are commented out
@@ -371,7 +371,21 @@ __interrupt void  PWM_ePWM4_ISR__analog(void)
 	default: event++;
 	}
 
-	//Presently set to 5ms, service LCD every 500ms
+	/*
+	 * Timer is presently set to 5ms
+	 */
+
+	//Debounce our input switch
+	if (GpioDataRegs.GPADAT.bit.GPIO21 == 0){
+	    reset_sw++;
+
+	    //20 = 100ms held
+	    if (reset_sw == 20){
+	        CTL_HardSTOP(RESET_BUTTON);
+	    }
+	}else reset_sw = 0;
+
+	//Service every 500ms including
 	if (service++ == 100){
 	    if (online) CTL_OnlineCALLBACK();
 
